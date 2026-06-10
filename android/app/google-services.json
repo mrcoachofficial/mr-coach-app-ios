@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "91035596332",
+    "project_id": "mrcoach-client",
+    "storage_bucket": "mrcoach-client.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:91035596332:android:dc7f68d7f747a955f00389",
+        "android_client_info": {
+          "package_name": "com.example.mrcoach"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "91035596332-f055kl7ut6rhkovbt34g7hl2m87m74pn.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.mrcoach",
+            "certificate_hash": "ee6a8834339f2e62b56de4e52390958c1cc415d8"
+          }
+        },
+        {
+          "client_id": "91035596332-akkmai05bpof4jjaau3tg126seba4ip4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAPPZaq4VeREzkW4mXSSq_ePOR5ogP-l-o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "91035596332-akkmai05bpof4jjaau3tg126seba4ip4.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -102,6 +102,7 @@ class _FitnessScreenState extends State<FitnessScreen> {
       MaterialPageRoute(
         builder: (_) => YogaServiceScreen(
           preSelectedServiceName: serviceName ?? 'Body Toning',
+          categoryName: 'Fitness',
         ),
       ),
     );

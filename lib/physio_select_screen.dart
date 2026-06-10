@@ -122,6 +122,7 @@ class _PhysioScreenState extends State<PhysioScreen>
       MaterialPageRoute(
         builder: (_) => YogaServiceScreen(
           preSelectedServiceName: serviceName ?? 'Back / Neck / Knee Pain',
+          categoryName: 'Physiotherapy',
         ),
       ),
     );

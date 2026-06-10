@@ -120,6 +120,7 @@ class _YogaBooking1ScreenState extends State<YogaBooking1Screen>
       MaterialPageRoute(
         builder: (_) => YogaServiceScreen(
           preSelectedServiceName: serviceName ?? 'Online Yoga',
+          categoryName: 'Yoga & Wellness',
         ),
       ),
     );

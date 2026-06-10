@@ -17,6 +17,7 @@ import 'package:mrcoach/home%20screens/yoga_screen.dart';
 import 'package:mrcoach/home%20screens/notifications_inbox_page.dart';
 import 'package:mrcoach/my_bookings_page.dart';
 import 'package:mrcoach/services/location_service.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 Future<void> _launchEventsUrl() async {
   final Uri url = Uri.parse('https://www.mrcoach.in/events');
@@ -240,8 +241,8 @@ class _Home2ScreenState extends State<Home2Screen> with TickerProviderStateMixin
     SliderItem(line1: 'REFER &',  line2: 'EARN',      sub: 'Get ₹100 for every friend', ctaLabel: 'INVITE NOW', imagePath: 'assets/images/slider1.jpeg', icon: Icons.card_giftcard_rounded, dest: (_) => ReferralPage()),
   ];
 
-  Map<String, String> _dynamicImageMap = {};
-  Map<String, String> _dynamicInnerBannerMap = {};
+  Map<String, String> _dynamicImageMap = ApiService.cachedDynamicImageMap ?? {};
+  Map<String, String> _dynamicInnerBannerMap = ApiService.cachedDynamicInnerBannerMap ?? {};
 
   List<ServiceTile> _tiles(BuildContext ctx) => [
     ServiceTile(icon: Icons.fitness_center,          
@@ -272,8 +273,8 @@ class _Home2ScreenState extends State<Home2Screen> with TickerProviderStateMixin
     ShopItem(imagePath: 'assets/images/epq.jpg',          title: 'GYM EQUIPMENT PACK',      date: 'In Stock', time: 'Next Day',       location: 'Ships from Chennai', detailPage: Shop1Screen()),
   ];
 
-  List<dynamic> _dynamicBanners = [];
-  bool _loadingBanners = true;
+  List<dynamic> _dynamicBanners = ApiService.cachedBanners ?? [];
+  bool _loadingBanners = ApiService.cachedBanners == null;
 
   int _unreadCount = 0;
   Timer? _notifTimer;
@@ -348,7 +349,17 @@ class _Home2ScreenState extends State<Home2Screen> with TickerProviderStateMixin
 
   Future<void> _fetchDynamicImages() async {
     try {
-      final services = await ApiService.getServices();
+      final results = await Future.wait([
+        ApiService.getServicesHeroImage().catchError((_) => ''),
+        ApiService.getServices().catchError((_) => []),
+      ]);
+
+      final String liveHeroUrl = results[0] as String;
+      final List<dynamic> services = results[1] as List<dynamic>;
+
+      ApiService.cachedServices = services;
+      ApiService.cachedServicesHeroImage = liveHeroUrl;
+
       final Map<String, String> tileMap = {};
       final Map<String, String> innerMap = {};
       
@@ -361,6 +372,9 @@ class _Home2ScreenState extends State<Home2Screen> with TickerProviderStateMixin
           }
         }
       }
+
+      ApiService.cachedDynamicImageMap = tileMap;
+      ApiService.cachedDynamicInnerBannerMap = innerMap;
 
       if (mounted) {
         setState(() {
@@ -376,6 +390,7 @@ class _Home2ScreenState extends State<Home2Screen> with TickerProviderStateMixin
   Future<void> _fetchDynamicBanners() async {
     try {
       final banners = await ApiService.getActiveBanners();
+      ApiService.cachedBanners = banners;
       if (mounted) {
         setState(() {
           _dynamicBanners = banners;
@@ -905,7 +920,7 @@ Widget _buildShopCarousel() {
       notchMargin: 8,
       shape: const CircularNotchedRectangle(),
       child: SizedBox(
-        height: 62 + bottomSafe,
+        height: 80 + bottomSafe,
         child: Padding(
           padding: EdgeInsets.only(bottom: bottomSafe),
           child: Row(
@@ -1211,18 +1226,26 @@ class _ServiceTileCardState extends State<_ServiceTileCard> {
                     child: Stack(fit: StackFit.expand, children: [
                       Container(color: kSliderDark),
                       if (widget.tile.networkImageUrl != null && widget.tile.networkImageUrl!.isNotEmpty)
-                        Image.network(
-                          ApiService.getMediaUrl(widget.tile.networkImageUrl!),
+                        CachedNetworkImage(
+                          imageUrl: ApiService.getMediaUrl(widget.tile.networkImageUrl!),
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => widget.tile.imagePath != null
+                          placeholder: (context, url) => Container(
+                            color: kSliderDark,
+                            child: const Center(
+                              child: CircularProgressIndicator(
+                                color: kPrimary,
+                                strokeWidth: 1.5,
+                              ),
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => widget.tile.imagePath != null
                               ? Image.asset(widget.tile.imagePath!, fit: BoxFit.cover)
                               : const SizedBox.shrink(),
                         )
                       else if (widget.tile.imagePath != null)
                         Image.asset(widget.tile.imagePath!, fit: BoxFit.cover,
                             errorBuilder: (_, __, ___) => const SizedBox.shrink()),
-                      if (widget.tile.imagePath != null || widget.tile.networkImageUrl != null)
-                        Container(color: kSliderDark.withOpacity(0.35)),
+
                     //  Center(child: Icon(widget.tile.icon, size: 36,
                     //      color: widget.tile.iconColor.withOpacity(0.25))),
                       Positioned(
@@ -1737,7 +1760,6 @@ class _DynamicSlideCard extends StatelessWidget {
     final String imageUrl = banner['imageUrl'] ?? '';
     final String title = banner['title'] ?? '';
     final String subtitle = banner['subtitle'] ?? '';
-    final String ctaText = banner['ctaText'] ?? 'Explore Now';
 
     return GestureDetector(
       onTap: onTap,
@@ -1746,22 +1768,19 @@ class _DynamicSlideCard extends StatelessWidget {
         child: Stack(fit: StackFit.expand, children: [
           if (imageUrl.isNotEmpty)
             Positioned.fill(
-              child: Image.network(
-                imageUrl,
+              child: CachedNetworkImage(
+                imageUrl: imageUrl,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                loadingBuilder: (ctx, child, progress) {
-                  if (progress == null) return child;
-                  return Container(
-                    color: kSliderDark,
-                    child: const Center(
-                      child: CircularProgressIndicator(
-                        color: kPrimary,
-                        strokeWidth: 2,
-                      ),
+                placeholder: (context, url) => Container(
+                  color: kSliderDark,
+                  child: const Center(
+                    child: CircularProgressIndicator(
+                      color: kPrimary,
+                      strokeWidth: 2,
                     ),
-                  );
-                },
+                  ),
+                ),
+                errorWidget: (context, url, error) => const SizedBox.shrink(),
               ),
             ),
 
@@ -1787,32 +1806,6 @@ class _DynamicSlideCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: _dm(11, FontWeight.w500, Colors.white.withOpacity(0.75)),
                   ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: kPrimary,
-                    borderRadius: BorderRadius.circular(10),
-                    boxShadow: [
-                      BoxShadow(
-                        color: kPrimary.withOpacity(0.35),
-                        blurRadius: 10,
-                        offset: const Offset(0, 3),
-                      )
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        ctaText.toUpperCase(),
-                        style: _syne(9, FontWeight.w800, kDarkText, letterSpacing: 0.5),
-                      ),
-                      const SizedBox(width: 4),
-                      const Icon(Icons.arrow_forward_rounded, size: 12, color: kDarkText),
-                    ],
-                  ),
-                ),
               ],
             ),
           ),

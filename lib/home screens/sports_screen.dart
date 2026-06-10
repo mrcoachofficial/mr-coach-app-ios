@@ -123,6 +123,7 @@ class _SportsScreenState extends State<SportsScreen>
       MaterialPageRoute(
         builder: (_) => YogaServiceScreen(
           preSelectedServiceName: serviceName ?? 'Athletics',
+          categoryName: 'Sports',
         ),
       ),
     );

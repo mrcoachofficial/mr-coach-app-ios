@@ -123,6 +123,7 @@ class _TherapyScreenState extends State<TherapyScreen>
       MaterialPageRoute(
         builder: (_) => YogaServiceScreen(
           preSelectedServiceName: serviceName ?? 'Acupressure',
+          categoryName: 'Therapy',
         ),
       ),
     );

@@ -119,6 +119,7 @@ class _DietBooking1ScreenState extends State<DietBooking1Screen>
       MaterialPageRoute(
         builder: (_) => YogaServiceScreen(
           preSelectedServiceName: serviceName ?? 'Meditation',
+          categoryName: 'Diet',
         ),
       ),
     );
