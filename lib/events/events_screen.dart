@@ -494,24 +494,6 @@ class _EventsScreenState extends State<EventsScreen> {
             icon: const Icon(Icons.notifications_none_outlined, color: Colors.black),
             onPressed: () {},
           ),
-          Container(
-            margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFFEAF9E8),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Row(
-              children: [
-                Text(
-                  '100',
-                  style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 13),
-                ),
-                SizedBox(width: 4),
-                Icon(Icons.monetization_on, color: Colors.amber, size: 16),
-              ],
-            ),
-          ),
         ],
       ),
       body: Column(
