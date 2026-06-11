@@ -544,10 +544,123 @@ class _YogaServiceScreenState extends State<YogaServiceScreen>
     }
   }
 
+  String? _getCategoryFromCMS(String serviceName) {
+    if (ApiService.cachedServices != null) {
+      for (var s in ApiService.cachedServices!) {
+        if (s is Map &&
+            s['title'] != null &&
+            s['title'].toString().toLowerCase().trim() ==
+                serviceName.toLowerCase().trim()) {
+          return s['category']?.toString();
+        }
+      }
+    }
+    return null;
+  }
+
+  bool _shouldShowService(YogaService service) {
+    if (widget.categoryName == null) return true;
+
+    final selectedCat = widget.categoryName!.toLowerCase().trim();
+
+    // 1. Try to find the category from CMS mappings (ApiService.cachedServices)
+    final cmsCategory = _getCategoryFromCMS(service.name);
+    if (cmsCategory != null) {
+      final cmsCatLower = cmsCategory.toLowerCase().trim();
+      if (cmsCatLower == selectedCat) return true;
+      if (selectedCat.contains('fitness') && cmsCatLower.contains('fitness')) return true;
+      if (selectedCat.contains('physio') && cmsCatLower.contains('physio')) return true;
+      if ((selectedCat.contains('yoga') || selectedCat.contains('wellness')) &&
+          (cmsCatLower.contains('yoga') || cmsCatLower.contains('wellness'))) return true;
+      if (selectedCat.contains('sport') && cmsCatLower.contains('sport')) return true;
+      if ((selectedCat.contains('diet') || selectedCat.contains('nutrition')) &&
+          (cmsCatLower.contains('diet') || cmsCatLower.contains('nutrition'))) return true;
+      if (cmsCatLower.contains(selectedCat) || selectedCat.contains(cmsCatLower)) return true;
+      
+      return false;
+    }
+
+    // 2. Try to derive from existing category-service relationships (using names/IDs)
+    final lowerName = service.name.toLowerCase();
+    if (selectedCat.contains('diet') || selectedCat.contains('nutrition')) {
+      final ids = ['40', '41', '42', '43', '44', '45', '46'];
+      return ids.contains(service.id) ||
+          lowerName.contains('diet') ||
+          lowerName.contains('nutrition');
+    } else if (selectedCat.contains('fitness')) {
+      final ids = ['7', '8', '9', '10', '11', '12', '13', '14'];
+      return ids.contains(service.id) ||
+          lowerName.contains('fitness') ||
+          lowerName.contains('gym') ||
+          lowerName.contains('strength') ||
+          lowerName.contains('body') ||
+          lowerName.contains('weight') ||
+          lowerName.contains('kids fitness') ||
+          lowerName.contains('senior') ||
+          lowerName.contains('muscle') ||
+          lowerName.contains('trainer') ||
+          lowerName.contains('toning') ||
+          lowerName.contains('functional');
+    } else if (selectedCat.contains('physio')) {
+      final ids = ['15', '16', '17', '18', '19', '20', '21', '22', '23'];
+      return ids.contains(service.id) ||
+          lowerName.contains('physio') ||
+          lowerName.contains('surgery') ||
+          lowerName.contains('rehab') ||
+          lowerName.contains('pain') ||
+          lowerName.contains('mobility') ||
+          lowerName.contains('elderly') ||
+          lowerName.contains('recovery') ||
+          lowerName.contains('care');
+    } else if (selectedCat.contains('yoga') || selectedCat.contains('wellness')) {
+      final ids = ['0', '1', '2', '3', '4', '5', '6'];
+      return ids.contains(service.id) ||
+          lowerName.contains('yoga') ||
+          lowerName.contains('stress') ||
+          lowerName.contains('pregnancy') ||
+          lowerName.contains('meditation') ||
+          lowerName.contains('breath') ||
+          lowerName.contains('relaxation');
+    } else if (selectedCat.contains('sport')) {
+      final ids = ['30', '31', '32', '33', '34', '35', '36', '37', '38', '39'];
+      return ids.contains(service.id) ||
+          lowerName.contains('sport') ||
+          lowerName.contains('athletics') ||
+          lowerName.contains('badminton') ||
+          lowerName.contains('boxing') ||
+          lowerName.contains('kickboxing') ||
+          lowerName.contains('cricket') ||
+          lowerName.contains('football') ||
+          lowerName.contains('karate') ||
+          lowerName.contains('skating') ||
+          lowerName.contains('swimming') ||
+          lowerName.contains('running') ||
+          lowerName.contains('marathon');
+    } else if (selectedCat.contains('therapy')) {
+      final ids = ['24', '25', '26', '27', '28', '29'];
+      return ids.contains(service.id) ||
+          lowerName.contains('therapy') ||
+          lowerName.contains('acupressure') ||
+          lowerName.contains('acupuncture') ||
+          lowerName.contains('naturopathy') ||
+          lowerName.contains('healing');
+    }
+
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
     final selectedServices =
         kYogaServices.where((s) => _selected.contains(s.id)).toList();
+
+    final filteredServices = kYogaServices.where((s) {
+      if (widget.preSelectedServiceName != null &&
+          s.name.toLowerCase().trim() == widget.preSelectedServiceName!.toLowerCase().trim()) {
+        return true;
+      }
+      return _shouldShowService(s);
+    }).toList();
 
     return Scaffold(
       backgroundColor: kPrimaryBg,
@@ -623,6 +736,7 @@ class _YogaServiceScreenState extends State<YogaServiceScreen>
                   onTimeChanged: (t) => setState(() => _selectedTime = t),
                   preSelectedServiceName: widget.preSelectedServiceName,
                   availableTimeSlots: _availableTimeSlotsForSelectedDate,
+                  filteredServices: filteredServices,
                 ),
                 _MyBookingsTab(bookings: _sessionBookings),
               ],
@@ -739,143 +853,54 @@ class _Header extends StatelessWidget {
   final String? categoryName;
   const _Header({this.preSelectedName, this.categoryName});
 
+  String _getCategoryEmoji(String? categoryName) {
+    if (categoryName == null) return '🧘';
+    final cat = categoryName.toLowerCase();
+    if (cat.contains('fitness')) return '🏋️';
+    if (cat.contains('physio')) return '🩺';
+    if (cat.contains('yoga') || cat.contains('wellness')) return '🧘';
+    if (cat.contains('sport')) return '⚽';
+    if (cat.contains('diet') || cat.contains('nutrition')) return '🥗';
+    if (cat.contains('therapy')) return '💆';
+    return '📋';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFFFFC107), Color(0xFFFFC107)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
+      color: Colors.white,
       padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 10,
-        left: 20,
-        right: 20,
-        bottom: 22,
+        top: MediaQuery.of(context).padding.top + 12,
+        left: 16,
+        right: 16,
+        bottom: 12,
       ),
-      child: Stack(
+      child: Row(
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.20),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.arrow_back_ios_new_rounded,
-                          color: Colors.white, size: 14),
-                    ),
-                  ),
-                ],
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8F5E9),
+                borderRadius: BorderRadius.circular(10),
               ),
-              const SizedBox(height: 14),
-              if (preSelectedName != null)
-                Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.check_circle_rounded,
-                          size: 13, color: Color(0xFF2E7D32)),
-                      const SizedBox(width: 5),
-                      Text(
-                        '$preSelectedName selected',
-                        style: const TextStyle(
-                          color: Color(0xFF2E7D32),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.20),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  categoryName ?? 'Yoga & Wellness',
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.4),
-                ),
+              child: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: Color(0xFF2E7D32),
+                size: 15,
               ),
-              const SizedBox(height: 8),
-              const Text(
-                'Choose Your\nServices',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  height: 1.3,
-                ),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'Select services, mode & preferred slot',
-                style: TextStyle(color: Color(0xFFB9F6CA), fontSize: 12),
-              ),
-            ],
+            ),
           ),
-          Positioned(
-            top: 0,
-            right: 0,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: const Color.fromARGB(255, 255, 208, 0),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Text(
-                    'Demo ₹99/session',
-                    style: TextStyle(
-                        color: Color(0xFF2C1A00),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.20),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Text(
-                    'Enquire FREE',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700),
-                  ),
-                ),
-              ],
+          const SizedBox(width: 14),
+          Text(
+            '${_getCategoryEmoji(categoryName)} ${categoryName ?? "Yoga & Wellness"}',
+            style: const TextStyle(
+              color: Color(0xFF1A2E1A),
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
             ),
           ),
         ],
@@ -894,6 +919,7 @@ class _ServicesTab extends StatelessWidget {
   final void Function(String) onTimeChanged;
   final String? preSelectedServiceName;
   final List<String> availableTimeSlots;
+  final List<YogaService> filteredServices;
 
   const _ServicesTab({
     required this.selected,
@@ -905,6 +931,7 @@ class _ServicesTab extends StatelessWidget {
     required this.onPickDate,
     required this.onTimeChanged,
     required this.availableTimeSlots,
+    required this.filteredServices,
     this.preSelectedServiceName,
   });
 
@@ -1048,7 +1075,27 @@ class _ServicesTab extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 22),
-        _SectionLabel(label: 'AVAILABLE SERVICES'),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const _SectionLabel(label: 'AVAILABLE SERVICES'),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8F5E9),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '${filteredServices.length} services',
+                style: const TextStyle(
+                  color: Color(0xFF2E7D32),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: 6),
         const Row(
           children: [
@@ -1060,7 +1107,7 @@ class _ServicesTab extends StatelessWidget {
         ),
         const SizedBox(height: 14),
 
-        ...kYogaServices.map((s) => Padding(
+        ...filteredServices.map((s) => Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: _ServiceCard(
                 service: s,
