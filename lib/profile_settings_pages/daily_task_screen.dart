@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:mrcoach/services/api_service.dart';
+import 'package:mrcoach/services/location_service.dart';
 import 'package:mrcoach/home%20screens/scratch_card_screen.dart';
 
 const Color kYellow      = Color(0xFFF9C413);
@@ -948,6 +951,9 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> with TickerProvider
   double _currentValue = 0.0;
   double _speed = 0.0;
 
+  StreamSubscription<Position>? _positionStreamSubscription;
+  Position? _lastPosition;
+
   late AnimationController _ringController;
   late AnimationController _pulseController;
   late Animation<double>   _pulseAnim;
@@ -972,43 +978,127 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> with TickerProvider
 
   @override
   void dispose() {
-    if (_isRunning) _timer.cancel();
+    if (_isRunning) {
+      _timer.cancel();
+      _positionStreamSubscription?.cancel();
+    }
     _ringController.dispose();
     _pulseController.dispose();
     super.dispose();
   }
 
-  void _toggleTimer() {
+  void _toggleTimer() async {
     if (!_isRunning) {
-      setState(() { _isRunning = true; _isPaused = false; });
+      // Check location permission
+      bool hasPermission = await LocationService.requestPermission();
+      if (!hasPermission) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Location permission is required to track your physical movement.'),
+            backgroundColor: kOrange,
+            behavior: SnackBarBehavior.floating,
+          ));
+        }
+        return;
+      }
+
+      setState(() {
+        _isRunning = true;
+        _isPaused = false;
+        _lastPosition = null;
+      });
+
+      // 1. Start real GPS tracking stream on mobile, fallback to simulation if on web
+      if (!kIsWeb) {
+        _positionStreamSubscription = Geolocator.getPositionStream(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+            distanceFilter: 3, // Trigger every 3 meters
+          ),
+        ).listen((Position position) {
+          if (!mounted || !_isRunning) return;
+
+          setState(() {
+            if (_lastPosition != null) {
+              double meters = Geolocator.distanceBetween(
+                _lastPosition!.latitude,
+                _lastPosition!.longitude,
+                position.latitude,
+                position.longitude,
+              );
+
+              // Filter out sensor noise / huge gps jumps
+              if (meters > 0.5 && meters < 100) {
+                double km = meters / 1000.0;
+                _currentValue = min(_currentValue + km, widget.target);
+              }
+            }
+            
+            _lastPosition = position;
+            
+            // Calculate speed in km/h (position.speed is in m/s)
+            double gpsSpeed = position.speed * 3.6;
+            if (gpsSpeed > 0.5) {
+              _speed = gpsSpeed;
+            } else {
+              _speed = 0.0;
+            }
+
+            final double newPct = _currentValue / widget.target;
+            _ringController.animateTo(newPct, duration: const Duration(milliseconds: 500));
+
+            if (_currentValue >= widget.target) {
+              _stopTracking();
+              Future.delayed(const Duration(milliseconds: 500), _onComplete);
+            }
+          });
+        }, onError: (err) {
+          debugPrint('GPS Stream error: $err');
+        });
+      }
+
+      // 2. Start time elapsed timer
       _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (!mounted || !_isRunning) return;
         setState(() {
           _elapsedSeconds++;
-          // Simulate some progress increments
-          final double increment = (Random().nextDouble() * 0.15 + 0.05);
-          _currentValue = min(_currentValue + increment, widget.target);
-          _speed = widget.activityType == 'walk'
-              ? (Random().nextDouble() * 0.5 + 4.5)
-              : (Random().nextDouble() * 1.5 + 8.5);
+          
+          // Fallback simulation (web only)
+          if (kIsWeb) {
+            final double increment = (Random().nextDouble() * 0.15 + 0.05);
+            _currentValue = min(_currentValue + increment, widget.target);
+            _speed = widget.activityType == 'walk'
+                ? (Random().nextDouble() * 0.5 + 4.5)
+                : (Random().nextDouble() * 1.5 + 8.5);
 
-          final double newPct = _currentValue / widget.target;
-          _ringController.animateTo(newPct, duration: const Duration(milliseconds: 500));
+            final double newPct = _currentValue / widget.target;
+            _ringController.animateTo(newPct, duration: const Duration(milliseconds: 500));
 
-          if (_currentValue >= widget.target) {
-            _timer.cancel();
-            _isRunning = false;
-            Future.delayed(const Duration(milliseconds: 500), _onComplete);
+            if (_currentValue >= widget.target) {
+              _stopTracking();
+              Future.delayed(const Duration(milliseconds: 500), _onComplete);
+            }
           }
         });
       });
     } else {
-      setState(() { _isRunning = false; _isPaused = true; });
-      _timer.cancel();
+      _stopTracking();
     }
   }
 
+  void _stopTracking() {
+    setState(() {
+      _isRunning = false;
+      _isPaused = true;
+    });
+    _timer.cancel();
+    _positionStreamSubscription?.cancel();
+    _positionStreamSubscription = null;
+    _lastPosition = null;
+  }
+
   void _fastComplete() {
-    if (_isRunning) _timer.cancel();
+    _stopTracking();
     setState(() {
       _currentValue = widget.target;
       _isRunning = false;
