@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:mrcoach/services/api_service.dart';
 import 'package:flutter/gestures.dart';
 import 'package:mrcoach/profile_settings_pages/legal_screens.dart';
@@ -47,6 +49,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final PageController       _pageController  = PageController();
   final TextEditingController _nameController  = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _referralController = TextEditingController();
   int    _currentPage      = 0;
   Timer? _timer;
   bool   _whatsappUpdates  = true;
@@ -75,12 +78,14 @@ class _LoginScreenState extends State<LoginScreen> {
     _pageController.dispose();
     _nameController.dispose();
     _phoneController.dispose();
+    _referralController.dispose();
     super.dispose();
   }
 
   void _onGetOtp() async {
     final name  = _nameController.text.trim();
     final phone = _phoneController.text.trim();
+    final refCode = _isExistingUser ? '' : _referralController.text.trim();
     if (!_isExistingUser && name.isEmpty) {
       _snack('Please enter your name', Colors.redAccent); return;
     }
@@ -108,6 +113,7 @@ class _LoginScreenState extends State<LoginScreen> {
             dummyOtp: dummyOtp,
             whatsappUpdates: _whatsappUpdates,
             isExistingUser: _isExistingUser,
+            referralCode: refCode.isEmpty ? null : refCode,
           ),
         ),
       );
@@ -167,6 +173,50 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       setState(() => _isLoading = false);
       _snack('Google sign-in error: $e', Colors.redAccent);
+    }
+  }
+
+  void _onAppleSignIn() async {
+    setState(() => _isLoading = true);
+    try {
+      final credential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+      );
+
+      final String? idToken = credential.identityToken;
+      if (idToken == null) {
+        _snack('Apple Sign-In failed: Identity token is null', Colors.redAccent);
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      final String? givenName = credential.givenName;
+      final String? familyName = credential.familyName;
+      final String fullName = (givenName != null || familyName != null)
+          ? '${givenName ?? ''} ${familyName ?? ''}'.trim()
+          : '';
+
+      final result = await ApiService.loginWithApple(
+        identityToken: idToken,
+        email: credential.email,
+        name: fullName.isEmpty ? null : fullName,
+      );
+      setState(() => _isLoading = false);
+
+      if (result['success'] == true) {
+        _snack('Logged in with Apple! 🍎', Colors.green);
+        if (mounted) {
+          Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+        }
+      } else {
+        _snack(result['message'] ?? 'Failed Apple sign in', Colors.redAccent);
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      _snack('Apple Sign-In error: $e', Colors.redAccent);
     }
   }
 
@@ -328,6 +378,32 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 12),
 
+              if (!_isExistingUser) ...[
+                _inputContainer(
+                  child: Row(children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      child: const Icon(Icons.card_giftcard_rounded, color: kSubText, size: 22),
+                    ),
+                    Expanded(
+                      child: TextField(
+                        controller: _referralController,
+                        keyboardType: TextInputType.text,
+                        textCapitalization: TextCapitalization.characters,
+                        style: const TextStyle(color: kText, fontSize: 15),
+                        decoration: const InputDecoration(
+                          hintText: 'Referral Code (Optional)',
+                          hintStyle: TextStyle(color: kSubText, fontSize: 15),
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(horizontal: 0, vertical: 16),
+                        ),
+                      ),
+                    ),
+                  ]),
+                ),
+                const SizedBox(height: 12),
+              ],
+
               GestureDetector(
                 onTap: () => setState(() => _whatsappUpdates = !_whatsappUpdates),
                 child: ClipRRect(
@@ -428,6 +504,26 @@ class _LoginScreenState extends State<LoginScreen> {
                   ]),
                 ),
               ),
+              if (Platform.isIOS) ...[
+                const SizedBox(height: 12),
+                GestureDetector(
+                  onTap: _onAppleSignIn,
+                  child: Container(
+                    width: double.infinity, height: 54,
+                    decoration: BoxDecoration(
+                      color: Colors.black,
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 8, offset: const Offset(0, 2))],
+                    ),
+                    child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      Icon(Icons.apple, color: Colors.white, size: 24),
+                      SizedBox(width: 12),
+                      Text('Continue with Apple',
+                          style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
+                    ]),
+                  ),
+                ),
+              ],
               const SizedBox(height: 40),
 
               Center(
@@ -724,6 +820,7 @@ class OtpScreen extends StatefulWidget {
   final String? dummyOtp;
   final bool whatsappUpdates;
   final bool isExistingUser;
+  final String? referralCode;
   const OtpScreen({
     super.key,
     required this.phone,
@@ -731,6 +828,7 @@ class OtpScreen extends StatefulWidget {
     this.dummyOtp,
     required this.whatsappUpdates,
     required this.isExistingUser,
+    this.referralCode,
   });
   @override State<OtpScreen> createState() => _OtpScreenState();
 }
@@ -798,7 +896,12 @@ class _OtpScreenState extends State<OtpScreen> {
     }
     setState(() => _isVerifying = true);
     final String fullPhone = '+91${widget.phone}';
-    final result = await ApiService.verifyLoginOtp(fullPhone, _otp, whatsappUpdates: widget.whatsappUpdates);
+    final result = await ApiService.verifyLoginOtp(
+      fullPhone,
+      _otp,
+      whatsappUpdates: widget.whatsappUpdates,
+      referralCode: widget.referralCode,
+    );
 
     if (result['success'] == true) {
       final user = result['user'];

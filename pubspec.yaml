@@ -1,7 +1,7 @@
 name: mrcoach
 description: "A new Flutter project."
 publish_to: 'none'
-version: 0.1.0
+version: 0.1.0+3
 # name: fit_task
 # description: FitTask - GPS Activity Tracker with Cheat Detection
 # publish_to: 'none'
@@ -29,12 +29,21 @@ dependencies:
   permission_handler: ^11.3.1
   onesignal_flutter: ^5.1.2
   google_sign_in: ^6.2.1
+  sign_in_with_apple: ^6.1.1
   cached_network_image: ^3.4.1
+  js: ^0.6.7
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/logo.jpeg"
+  remove_alpha_ios: true
   
 
 flutter:

@@ -52,8 +52,18 @@ class ApiService {
   }
 
   // Helper to dynamically rewrite image/media URLs to match the active baseUrl host/origin
-  static String getMediaUrl(String url) {
+  static String getMediaUrl(String url, {int? width}) {
     if (url.isEmpty) return '';
+
+    // Auto-optimize Cloudinary image URLs
+    if (url.contains('res.cloudinary.com') && url.contains('/image/upload/')) {
+      if (!url.contains('/c_scale') && !url.contains('/q_') && !url.contains('/f_')) {
+        final targetWidth = width ?? 400;
+        url = url.replaceAll('/image/upload/', '/image/upload/c_scale,w_$targetWidth,q_auto,f_auto/');
+      }
+      return url; // Cloudinary uses versioned URLs; caching is safe without cache-busters
+    }
+
     final String origin = baseUrl.replaceAll('/api', '');
     String finalUrl = url;
     if (!url.startsWith('http')) {
@@ -787,7 +797,7 @@ class ApiService {
   }
 
   // Verify Login OTP
-  static Future<Map<String, dynamic>> verifyLoginOtp(String phoneNumber, String otp, {bool? whatsappUpdates}) async {
+  static Future<Map<String, dynamic>> verifyLoginOtp(String phoneNumber, String otp, {bool? whatsappUpdates, String? referralCode}) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/auth/verify-otp'),
@@ -796,6 +806,7 @@ class ApiService {
           'phoneNumber': phoneNumber,
           'otp': otp,
           if (whatsappUpdates != null) 'whatsappUpdates': whatsappUpdates,
+          if (referralCode != null && referralCode.isNotEmpty) 'referralCode': referralCode,
         }),
       );
       final data = jsonDecode(response.body);
@@ -847,6 +858,37 @@ class ApiService {
     }
   }
 
+  // Login/Register with Apple
+  static Future<Map<String, dynamic>> loginWithApple({required String identityToken, String? email, String? name}) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/apple'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'identityToken': identityToken,
+          if (email != null) 'email': email,
+          if (name != null) 'name': name,
+        }),
+      );
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        if (data['token'] != null) {
+          await saveToken(data['token']);
+          await updateCachedProfile(data['name'] ?? 'Enter your name', data['email'] ?? '...@gmail.com');
+        }
+        return {
+          'success': true,
+          'user': data,
+          'message': 'Logged in with Apple successfully'
+        };
+      } else {
+        return {'success': false, 'message': data['message'] ?? 'Failed Apple login'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Error: $e'};
+    }
+  }
+
   // Complete Profile Setup after OTP verification
   static Future<Map<String, dynamic>> completeProfileSetup({
     required String name,
@@ -882,6 +924,211 @@ class ApiService {
       } else {
         return {'success': false, 'message': data['message'] ?? 'Failed to update profile'};
       }
+    } catch (e) {
+      return {'success': false, 'message': 'Error: $e'};
+    }
+  }
+
+  // --- NEW COIN REWARDS & CHALLENGES ECOSYSTEM ---
+
+  // Get user's coin wallet
+  static Future<Map<String, dynamic>?> getUserWallet() async {
+    try {
+      final token = await getToken();
+      if (token == null) return null;
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/rewards/wallet'),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Get user's coin transaction history
+  static Future<List<dynamic>> getCoinTransactions() async {
+    try {
+      final token = await getToken();
+      if (token == null) return [];
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/rewards/transactions'),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  // Get user's challenges with progress
+  static Future<List<dynamic>> getChallenges() async {
+    try {
+      final token = await getToken();
+      if (token == null) return [];
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/rewards/challenges'),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  // Update challenge progress
+  static Future<Map<String, dynamic>> updateChallengeProgress(String challengeId, double progress) async {
+    try {
+      final token = await getToken();
+      if (token == null) return {'success': false, 'message': 'Not logged in'};
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/rewards/challenges/$challengeId/progress'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'progress': progress}),
+      );
+      final data = jsonDecode(response.body);
+      return {
+        'success': response.statusCode == 200,
+        ...data,
+      };
+    } catch (e) {
+      return {'success': false, 'message': 'Error: $e'};
+    }
+  }
+
+  // Claim challenge reward
+  static Future<Map<String, dynamic>> claimChallengeReward(String challengeId) async {
+    try {
+      final token = await getToken();
+      if (token == null) return {'success': false, 'message': 'Not logged in'};
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/rewards/challenges/$challengeId/claim'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+      final data = jsonDecode(response.body);
+      return {
+        'success': response.statusCode == 200,
+        ...data,
+      };
+    } catch (e) {
+      return {'success': false, 'message': 'Error: $e'};
+    }
+  }
+
+  // Redeem coins for voucher
+  static Future<Map<String, dynamic>> redeemCoinsForVoucher(int coins) async {
+    try {
+      final token = await getToken();
+      if (token == null) return {'success': false, 'message': 'Not logged in'};
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/rewards/vouchers/redeem'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'coins': coins}),
+      );
+      final data = jsonDecode(response.body);
+      return {
+        'success': response.statusCode == 201,
+        ...data,
+      };
+    } catch (e) {
+      return {'success': false, 'message': 'Error: $e'};
+    }
+  }
+
+  // Get user's vouchers
+  static Future<List<dynamic>> getUserVouchers() async {
+    try {
+      final token = await getToken();
+      if (token == null) return [];
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/rewards/vouchers'),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  // Apply voucher code to purchase
+  static Future<Map<String, dynamic>> applyVoucher(String voucherCode) async {
+    try {
+      final token = await getToken();
+      if (token == null) return {'success': false, 'message': 'Not logged in'};
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/rewards/vouchers/apply'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'voucherCode': voucherCode}),
+      );
+      final data = jsonDecode(response.body);
+      return {
+        'success': response.statusCode == 200,
+        ...data,
+      };
+    } catch (e) {
+      return {'success': false, 'message': 'Error: $e'};
+    }
+  }
+
+  // Mark voucher as used
+  static Future<Map<String, dynamic>> useVoucher(String voucherCode) async {
+    try {
+      final token = await getToken();
+      if (token == null) return {'success': false, 'message': 'Not logged in'};
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/rewards/vouchers/use'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'voucherCode': voucherCode}),
+      );
+      final data = jsonDecode(response.body);
+      return {
+        'success': response.statusCode == 200,
+        ...data,
+      };
     } catch (e) {
       return {'success': false, 'message': 'Error: $e'};
     }
