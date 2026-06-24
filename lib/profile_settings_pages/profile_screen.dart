@@ -16,6 +16,7 @@ import 'package:scratcher/scratcher.dart';
 import 'package:mrcoach/webview_screen.dart';
 import 'package:mrcoach/profile_settings_pages/legal_screens.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:share_plus/share_plus.dart';
 
 const Color kPrimary      = Color(0xFFF9C413);
 const Color kPrimaryDark  = Color(0xFFE0AC00);
@@ -363,11 +364,6 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
   }
 
   void _openChangePassword() {
-    final curCtrl = TextEditingController();
-    final newCtrl = TextEditingController();
-    final confCtrl = TextEditingController();
-    bool loading = false;
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -375,251 +371,97 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      builder: (sheetContext) => StatefulBuilder(
-        builder: (context, setSheetState) => Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-          child: SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
+      builder: (sheetContext) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Center(child: _Handle()),
+              const SizedBox(height: 20),
+              Row(
                 children: [
-                  Center(child: _Handle()),
-                  const SizedBox(height: 20),
-                  Text(
-                    AppLocalizations.translate('change_password'),
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: kDark),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: const BoxDecoration(
+                      color: kPrimaryPale,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.info_outline_rounded,
+                      color: kPrimaryDark,
+                      size: 28,
+                    ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    AppLocalizations.translate('reset_link_sent'),
-                    style: const TextStyle(fontSize: 12, color: kMid),
-                  ),
-                  const SizedBox(height: 20),
-                  _Field(
-                    ctrl: curCtrl,
-                    label: AppLocalizations.translate('current_password'),
-                    icon: Icons.lock_outline_rounded,
-                  ),
-                  const SizedBox(height: 12),
-                  _Field(
-                    ctrl: newCtrl,
-                    label: AppLocalizations.translate('new_password'),
-                    icon: Icons.lock_reset_rounded,
-                  ),
-                  const SizedBox(height: 12),
-                  _Field(
-                    ctrl: confCtrl,
-                    label: AppLocalizations.translate('confirm_password'),
-                    icon: Icons.lock_reset_rounded,
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.pop(sheetContext),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            side: const BorderSide(color: kBorder),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                          ),
-                          child: Text(
-                            AppLocalizations.translate('cancel'),
-                            style: const TextStyle(color: kMid, fontWeight: FontWeight.w600),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        flex: 2,
-                        child: ElevatedButton(
-                          onPressed: loading
-                              ? null
-                              : () async {
-                                  final currentPass = curCtrl.text.trim();
-                                  final newPass = newCtrl.text.trim();
-                                  final confPass = confCtrl.text.trim();
-
-                                  if (currentPass.isEmpty || newPass.isEmpty || confPass.isEmpty) {
-                                    _snack(AppLocalizations.translate('enter_all_fields'), err: true);
-                                    return;
-                                  }
-
-                                  if (newPass != confPass) {
-                                    _snack('New passwords do not match', err: true);
-                                    return;
-                                  }
-
-                                  setSheetState(() => loading = true);
-
-                                  final res = await ApiService.sendPasswordOtp(currentPass);
-                                  
-                                  setSheetState(() => loading = false);
-
-                                  if (res['success'] == true) {
-                                    Navigator.pop(sheetContext);
-                                    _snack(AppLocalizations.translate('otp_sent_to_email'));
-                                    _openOtpVerification(newPass);
-                                  } else {
-                                    _snack(res['message'] ?? 'Failed to send OTP', err: true);
-                                  }
-                                },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: kPrimary,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                            elevation: 0,
-                          ),
-                          child: loading
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: kDark),
-                                )
-                              : Text(
-                                  AppLocalizations.translate('otp_sent'),
-                                  style: const TextStyle(color: kDark, fontWeight: FontWeight.w800, fontSize: 14),
-                                ),
-                        ),
-                      ),
-                    ],
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Text(
+                      AppLocalizations.translate('change_password'),
+                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: kDark),
+                    ),
                   ),
                 ],
               ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _openOtpVerification(String newPassword) {
-    final otpCtrl = TextEditingController();
-    bool loading = false;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: kCard,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (otpContext) => StatefulBuilder(
-        builder: (context, setOtpState) => Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-          child: SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
+              const SizedBox(height: 20),
+              Text(
+                AppLocalizations.translate('change_password_info'),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: kDark,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 28),
+              Row(
                 children: [
-                  Center(child: _Handle()),
-                  const SizedBox(height: 20),
-                  Text(
-                    AppLocalizations.translate('verify_otp'),
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: kDark),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    AppLocalizations.translate('enter_otp'),
-                    style: const TextStyle(fontSize: 12, color: kMid),
-                  ),
-                  const SizedBox(height: 20),
-                  _Field(
-                    ctrl: otpCtrl,
-                    label: 'OTP Code (6 digits)',
-                    icon: Icons.pin_outlined,
-                    type: TextInputType.number,
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.pop(otpContext),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            side: const BorderSide(color: kBorder),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                          ),
-                          child: Text(
-                            AppLocalizations.translate('cancel'),
-                            style: const TextStyle(color: kMid, fontWeight: FontWeight.w600),
-                          ),
-                        ),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(sheetContext),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: const BorderSide(color: kBorder),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        flex: 2,
-                        child: ElevatedButton(
-                          onPressed: loading
-                              ? null
-                              : () async {
-                                  final otpVal = otpCtrl.text.trim();
-                                  if (otpVal.length != 6) {
-                                    _snack(AppLocalizations.translate('enter_valid_otp'), err: true);
-                                    return;
-                                  }
-
-                                  setOtpState(() => loading = true);
-
-                                  final res = await ApiService.changePassword(otpVal, newPassword);
-
-                                  setOtpState(() => loading = false);
-
-                                  if (res['success'] == true) {
-                                    Navigator.pop(otpContext);
-                                    _snack(AppLocalizations.translate('password_changed_success'));
-                                    
-                                    await ApiService.logout();
-                                    setState(() {
-                                      _name = 'Enter your name';
-                                      _email = '...@gmail.com';
-                                      _gender = '';
-                                      _age = null;
-                                      _dateOfBirth = '';
-                                      _area = '';
-                                      _pincode = '';
-                                      _district = '';
-                                      _stateField = '';
-                                      _serviceType = '';
-                                      _preferredLanguage = 'English';
-                                      _alternatePhone = '';
-                                      _address = '';
-                                      _profileImageUrl = null;
-                                      _emergencyContact = '';
-                                      _fitnessGoal = '';
-                                    });
-                                  } else {
-                                    _snack(res['message'] ?? 'OTP verification failed', err: true);
-                                  }
-                                },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: kPrimary,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                            elevation: 0,
-                          ),
-                          child: loading
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: kDark),
-                                )
-                              : Text(
-                                  AppLocalizations.translate('verify_otp'),
-                                  style: const TextStyle(color: kDark, fontWeight: FontWeight.w800, fontSize: 14),
-                                ),
-                        ),
+                      child: Text(
+                        AppLocalizations.translate('cancel'),
+                        style: const TextStyle(color: kMid, fontWeight: FontWeight.w600),
                       ),
-                    ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        Navigator.pop(sheetContext);
+                        await ApiService.logout();
+                        if (context.mounted) {
+                          Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Logged out successfully'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: kPrimary,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        elevation: 0,
+                      ),
+                      child: Text(
+                        AppLocalizations.translate('logout'),
+                        style: const TextStyle(color: kDark, fontWeight: FontWeight.w800, fontSize: 14),
+                      ),
+                    ),
                   ),
                 ],
               ),
-            ),
+            ],
           ),
         ),
       ),
@@ -741,21 +583,6 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
                           badgeCount: kOrders.length,
                           onTap: () => Navigator.push(context,
                               MaterialPageRoute(builder: (_) => const AllMyBookingsScreen())),
-                        ),
-                        const SizedBox(width: 5), // ← was 10, now 5
-                        _AnimatedQuickCard(
-                          icon: Icons.shopping_bag_outlined,
-                          animIcons: const [
-                            Icons.shopping_bag_outlined,
-                            Icons.local_shipping_rounded,
-                            Icons.inventory_2_rounded,
-                          ],
-                          label: '     My Orders   ',
-                          color: kOrange,
-                          pale: kOrangePale,
-                          badgeCount: kShopOrders.length,
-                          onTap: () => Navigator.push(context,
-                              MaterialPageRoute(builder: (_) => const MyOrdersPage())),
                         ),
                         const SizedBox(width: 5), // ← was 10, now 5
                         _AnimatedQuickCard(
@@ -2695,12 +2522,7 @@ class _ReferralPageState extends State<ReferralPage> {
                           child: ElevatedButton.icon(
                             onPressed: () {
                               final text = 'Hey! Use my referral code $_referralCode to sign up on MrCoach and get rewards! Register here: $_shareLink';
-                              Clipboard.setData(ClipboardData(text: text));
-                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                                content: Text('Invitation copied! Paste and share it anywhere.', style: TextStyle(color: kDark, fontWeight: FontWeight.w700)),
-                                backgroundColor: kPrimary,
-                                behavior: SnackBarBehavior.floating,
-                              ));
+                              Share.share(text);
                             },
                             icon: const Icon(Icons.share_rounded, size: 18, color: kDark),
                             label: const Text('Share & Invite Friends',
@@ -2716,14 +2538,19 @@ class _ReferralPageState extends State<ReferralPage> {
                         const SizedBox(height: 10),
                         Row(children: [
                           Expanded(child: OutlinedButton.icon(
-                            onPressed: () {
+                            onPressed: () async {
                               final text = 'Hey! Use my referral code $_referralCode to sign up on MrCoach and get rewards! Register here: $_shareLink';
-                              Clipboard.setData(ClipboardData(text: text));
-                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                                content: Text('WhatsApp message copied! Share with your friends.', style: TextStyle(color: kDark, fontWeight: FontWeight.w700)),
-                                backgroundColor: kPrimary,
-                                behavior: SnackBarBehavior.floating,
-                              ));
+                              final whatsappUrl = Uri.parse('https://api.whatsapp.com/send?text=${Uri.encodeComponent(text)}');
+                              if (await canLaunchUrl(whatsappUrl)) {
+                                await launchUrl(whatsappUrl, mode: LaunchMode.externalApplication);
+                              } else {
+                                Clipboard.setData(ClipboardData(text: text));
+                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                                  content: Text('Could not open WhatsApp. Link copied to clipboard!', style: TextStyle(color: kDark, fontWeight: FontWeight.w700)),
+                                  backgroundColor: kPrimary,
+                                  behavior: SnackBarBehavior.floating,
+                                ));
+                              }
                             },
                             icon: const Icon(Icons.chat_rounded, size: 15, color: kGreen),
                             label: const Text('WhatsApp', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: kDark)),
@@ -3314,52 +3141,67 @@ class _RewardContent extends StatelessWidget {
     color: Colors.white,
     width: double.infinity,
     height: double.infinity,
-    child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-      Container(
-        width: 60, height: 60,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-              begin: Alignment.topLeft, end: Alignment.bottomRight,
-              colors: card.theme.gradient),
-          shape: BoxShape.circle,
-          boxShadow: [BoxShadow(
-              color: card.theme.accent.withOpacity(0.35),
-              blurRadius: 14, offset: const Offset(0, 4))],
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Container(
+          width: 60, height: 60,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+                begin: Alignment.topLeft, end: Alignment.bottomRight,
+                colors: card.theme.gradient),
+            shape: BoxShape.circle,
+            boxShadow: [BoxShadow(
+                color: card.theme.accent.withOpacity(0.35),
+                blurRadius: 14, offset: const Offset(0, 4))],
+          ),
+          child: const Center(child: Icon(Icons.emoji_events_rounded, color: Colors.white, size: 28)),
         ),
-        child: const Center(child: Icon(Icons.emoji_events_rounded, color: Colors.white, size: 28)),
-      ),
-      const SizedBox(height: 10),
-      Text(card.reward,
+        const SizedBox(height: 10),
+        Text(
+          card.reward,
+          textAlign: TextAlign.center,
           style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900,
-              color: card.theme.accent, letterSpacing: -1)),
-      Text(card.subReward,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: kMid)),
-      const SizedBox(height: 6),
-      Container(
-        margin: const EdgeInsets.symmetric(horizontal: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-            color: kBg, borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: kBorder)),
-        child: Text(card.condition, textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 9, color: kMid, fontWeight: FontWeight.w600)),
-      ),
-      const SizedBox(height: 8),
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(colors: card.theme.gradient),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [BoxShadow(
-              color: card.theme.accent.withOpacity(0.35),
-              blurRadius: 10, offset: const Offset(0, 3))],
+              color: card.theme.accent, letterSpacing: -1),
         ),
-        child: const Text('CLAIM NOW',
-            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.white)),
-      ),
-      const SizedBox(height: 6),
-      Text(card.expiry, style: const TextStyle(fontSize: 9, color: kMid)),
-    ]),
+        Text(
+          card.subReward,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: kMid),
+        ),
+        const SizedBox(height: 6),
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+              color: kBg, borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: kBorder)),
+          child: Text(card.condition, textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 9, color: kMid, fontWeight: FontWeight.w600)),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(colors: card.theme.gradient),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [BoxShadow(
+                color: card.theme.accent.withOpacity(0.35),
+                blurRadius: 10, offset: const Offset(0, 3))],
+          ),
+          child: const Text('CLAIM NOW',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.white)),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          card.expiry,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 9, color: kMid),
+        ),
+      ],
+    ),
   );
 }
 

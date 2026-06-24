@@ -297,6 +297,20 @@ class ApiService {
     }
   }
 
+  // Fetch dynamic coach price tiers
+  static Future<List<dynamic>> getCoachPriceTiers() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/bookings/price-tiers'));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        return [];
+      }
+    } catch (e) {
+      return [];
+    }
+  }
+
   // Fetch user rewards
   static Future<List<dynamic>> getUserRewards() async {
     try {
@@ -852,37 +866,6 @@ class ApiService {
         };
       } else {
         return {'success': false, 'message': data['message'] ?? 'Failed Google login'};
-      }
-    } catch (e) {
-      return {'success': false, 'message': 'Error: $e'};
-    }
-  }
-
-  // Login/Register with Apple
-  static Future<Map<String, dynamic>> loginWithApple({required String identityToken, String? email, String? name}) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/auth/apple'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'identityToken': identityToken,
-          if (email != null) 'email': email,
-          if (name != null) 'name': name,
-        }),
-      );
-      final data = jsonDecode(response.body);
-      if (response.statusCode == 200) {
-        if (data['token'] != null) {
-          await saveToken(data['token']);
-          await updateCachedProfile(data['name'] ?? 'Enter your name', data['email'] ?? '...@gmail.com');
-        }
-        return {
-          'success': true,
-          'user': data,
-          'message': 'Logged in with Apple successfully'
-        };
-      } else {
-        return {'success': false, 'message': data['message'] ?? 'Failed Apple login'};
       }
     } catch (e) {
       return {'success': false, 'message': 'Error: $e'};

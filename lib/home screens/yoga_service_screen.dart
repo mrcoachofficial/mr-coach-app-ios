@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -18,6 +19,7 @@ class YogaService {
   const YogaService({
     required this.id,
     required this.name,
+    
     required this.description,
     required this.emoji,
   });
@@ -245,7 +247,9 @@ class _YogaServiceScreenState extends State<YogaServiceScreen>
   ) async {
     final isDemo = bookingType == 'demo';
     final sessionCount = data['sessionCount'] as int? ?? 1;
-    final price = isDemo ? (99.0 * sessionCount) : 0.0;
+    final discount = (data['discountAmount'] as num?)?.toDouble() ?? 0.0;
+    final basePrice = isDemo ? (99.0 * sessionCount) : 0.0;
+    final price = math.max(0.0, basePrice - discount);
 
     if (isDemo && price > 0) {
       // 1. Create Order on Backend
@@ -309,7 +313,7 @@ class _YogaServiceScreenState extends State<YogaServiceScreen>
         debugPrint('Error opening Razorpay: $e');
       }
     } else {
-      // Free Enquiry Flow
+      // Free Enquiry Flow or fully discounted voucher flow
       _finalizeBooking(services, bookingType, data);
     }
   }
@@ -325,6 +329,8 @@ class _YogaServiceScreenState extends State<YogaServiceScreen>
     final name = data['name'] as String?;
     final phone = data['phone'] as String?;
     final address = data['address'] as String?;
+    final discount = (data['discountAmount'] as num?)?.toDouble() ?? 0.0;
+    final appliedVoucherCode = data['appliedVoucherCode'] as String?;
 
     final primaryService = services.first;
     
@@ -416,7 +422,7 @@ class _YogaServiceScreenState extends State<YogaServiceScreen>
       'coachName': 'Pending Assignment', // Will be assigned by Admin
       'date': _selectedDate.toIso8601String().split('T')[0],
       'time': _selectedTime,
-      'price': isDemo ? (99 * sessionCount) : 0,
+      'price': isDemo ? math.max(0.0, (99.0 * sessionCount) - discount) : 0,
       'mode': isOnline ? 'Online' : 'Home Visit',
       'bookingType': isDemo ? 'Demo' : 'Enquiry',
       'mobileNumber': phone ?? 'Not Provided',
@@ -433,6 +439,7 @@ class _YogaServiceScreenState extends State<YogaServiceScreen>
       'sourceWebsite': data['sourceWebsite'],
       'category': derivedCategory,
       'subcategories': subcategoriesList,
+      'priceRange': data['priceRange'],
     });
 
     if (!result['success']) {
@@ -442,6 +449,11 @@ class _YogaServiceScreenState extends State<YogaServiceScreen>
         );
       }
       return; // Stop if the backend rejected it (e.g., not logged in)
+    }
+
+    // Mark voucher as used if successful
+    if (appliedVoucherCode != null) {
+      await ApiService.useVoucher(appliedVoucherCode);
     }
     // -----------------------
 
@@ -474,7 +486,7 @@ class _YogaServiceScreenState extends State<YogaServiceScreen>
       customerPhone: isDemo ? phone : null,
       enquirerName: !isDemo ? name : null,
       enquirerPhone: !isDemo ? phone : null,
-      totalAmount: isDemo ? (99 * sessionCount) : 0,
+      totalAmount: isDemo ? math.max(0.0, (99.0 * sessionCount) - discount).toInt() : 0,
       bookedAt: DateTime.now(),
     );
     BookingStore.instance.addBooking(globalBooking);
@@ -819,7 +831,7 @@ class _SelectedServicesBar extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                          color: Colors.black,
                         ),
                       ),
                       const SizedBox(width: 5),
@@ -834,7 +846,7 @@ class _SelectedServicesBar extends StatelessWidget {
                           ),
                           alignment: Alignment.center,
                           child: const Icon(Icons.close_rounded,
-                              size: 10, color: Colors.white),
+                              size: 10, color: Colors.black),
                         ),
                       ),
                     ],
@@ -1201,7 +1213,7 @@ class _ModeToggle extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
-                  color: selected ? Colors.white :kYellow,
+                  color: selected ? Colors.black :kYellow,
                 ),
               ),
               const SizedBox(height: 2),
@@ -1210,7 +1222,7 @@ class _ModeToggle extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 10,
                   color: selected
-                      ? Colors.white.withOpacity(0.8)
+                      ? Colors.black.withOpacity(0.8)
                       :kYellow,
                 ),
               ),
@@ -1788,7 +1800,7 @@ class _BottomBar extends StatelessWidget {
                         style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
-                            color: Colors.white),
+                            color: Colors.black),
                       ),
                       const SizedBox(width: 8),
                       Container(
@@ -1847,6 +1859,9 @@ class _ConfirmSheetState extends State<_ConfirmSheet> {
   final _districtController     = TextEditingController();
   final _areaController         = TextEditingController();
   final _pincodeController      = TextEditingController();
+  int _selectedPriceIndex = 0;
+  List<dynamic> _priceTiers = [];
+  bool _loadingTiers = true;
 
   String? _selectedGender;
   String? _selectedSource;
@@ -1860,6 +1875,13 @@ class _ConfirmSheetState extends State<_ConfirmSheet> {
   String _otpError     = '';
   final String _fakeOtp = '1234';
 
+  String? _appliedVoucherCode;
+  int _discountAmount = 0;
+  final _voucherController = TextEditingController();
+  bool _applyingVoucher = false;
+  String? _voucherError;
+  String? _voucherSuccess;
+
   @override
   void initState() {
     super.initState();
@@ -1868,6 +1890,7 @@ class _ConfirmSheetState extends State<_ConfirmSheet> {
       if (val != null && val >= 1) setState(() => _sessionCount = val);
     });
     _loadUserProfile();
+    _fetchPriceTiers();
   }
 
   Future<void> _loadUserProfile() async {
@@ -1928,6 +1951,7 @@ class _ConfirmSheetState extends State<_ConfirmSheet> {
     _areaController.dispose();
     _pincodeController.dispose();
     _otpController.dispose();
+    _voucherController.dispose();
     super.dispose();
   }
 
@@ -1958,6 +1982,34 @@ class _ConfirmSheetState extends State<_ConfirmSheet> {
     }
   }
 
+  Future<void> _applyVoucher() async {
+    final code = _voucherController.text.trim();
+    if (code.isEmpty) return;
+    setState(() {
+      _applyingVoucher = true;
+      _voucherError = null;
+      _voucherSuccess = null;
+    });
+
+    final res = await ApiService.applyVoucher(code);
+    setState(() => _applyingVoucher = false);
+
+    if (res['success'] == true) {
+      final amt = (res['voucher']?['amount'] as num?)?.toInt() ?? 0;
+      setState(() {
+        _appliedVoucherCode = code;
+        _discountAmount = amt;
+        _voucherSuccess = 'Voucher applied! ₹$amt discount.';
+      });
+    } else {
+      setState(() {
+        _voucherError = res['message'] ?? 'Invalid or expired voucher code';
+        _appliedVoucherCode = null;
+        _discountAmount = 0;
+      });
+    }
+  }
+
   bool get _isQuestionnaireComplete {
     final email = _emailController.text.trim();
     final isEmailValid = email.contains('@') && email.contains('.');
@@ -1979,17 +2031,12 @@ class _ConfirmSheetState extends State<_ConfirmSheet> {
   }
 
   bool get _canProceed {
-    if (widget.bookingType == 'enquiry') {
-      return _isQuestionnaireComplete;
-    } else {
-      return _phoneVerified && _isQuestionnaireComplete;
-    }
+    return _isQuestionnaireComplete;
   }
 
   String _getValidationMessage() {
     if (_nameController.text.trim().isEmpty) return 'Please enter your name';
     if (_phoneController.text.trim().length < 10) return 'Please enter a valid phone number';
-    if (widget.bookingType != 'enquiry' && !_phoneVerified) return 'Please verify your phone number';
     
     final email = _emailController.text.trim();
     if (email.isEmpty || !email.contains('@') || !email.contains('.')) return 'Please enter a valid email address';
@@ -2003,6 +2050,103 @@ class _ConfirmSheetState extends State<_ConfirmSheet> {
     if (_selectedSource == null) return 'Please select how you heard about us';
     if (widget.serviceMode != 'online' && _addressController.text.trim().isEmpty) return 'Please enter your home address';
     return '';
+  }
+
+  Future<void> _fetchPriceTiers() async {
+    try {
+      final tiers = await ApiService.getCoachPriceTiers();
+      if (mounted) {
+        setState(() {
+          _priceTiers = tiers.isNotEmpty ? tiers : _defaultPriceTiers;
+          _loadingTiers = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _priceTiers = _defaultPriceTiers;
+          _loadingTiers = false;
+        });
+      }
+    }
+  }
+
+  static const List<Map<String, dynamic>> _defaultPriceTiers = [
+    { 'min': 0, 'max': 700, 'label': 'Entry Level Coaches', 'icon': 'person', 'color': '#2196F3' },
+    { 'min': 700, 'max': 1000, 'label': 'Entry to Mid Level', 'icon': 'person', 'color': '#FFFF9800' },
+    { 'min': 1000, 'max': 1200, 'label': 'Medium Level Coaches', 'icon': 'headset_mic', 'color': '#E91E63' },
+    { 'min': 1200, 'max': 3000, 'label': 'Premium Level Coaches', 'icon': 'workspace_premium', 'color': '#FBC02D', 'isPlus': true }
+  ];
+
+  String _getPriceRangeString(int index) {
+    if (index < 0 || index >= _priceTiers.length) return '₹0 - ₹700';
+    final tier = _priceTiers[index];
+    final min = tier['min'];
+    final max = tier['max'];
+    final isLast = index == _priceTiers.length - 1;
+    return isLast ? '₹$min - ₹$max+' : '₹$min - ₹$max';
+  }
+
+  Widget _buildPriceCard({
+    required int index,
+    required String range,
+    required String label,
+    required IconData icon,
+    required Color color,
+    required bool isSelected,
+  }) {
+    return GestureDetector(
+      onTap: () => setState(() => _selectedPriceIndex = index),
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 200),
+        opacity: isSelected ? 1.0 : 0.4,
+        child: Container(
+          width: 140,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.05),
+            border: Border.all(
+              color: isSelected ? color : kBorderColor,
+              width: isSelected ? 2 : 1,
+            ),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                range,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: isSelected ? color : kTextDark,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, size: 14, color: color),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: isSelected ? color : Colors.grey[600],
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildTextField(
@@ -2208,122 +2352,9 @@ class _ConfirmSheetState extends State<_ConfirmSheet> {
               Icons.phone_outlined,
               keyboardType: TextInputType.phone,
               maxLength: 10,
-              enabled: !_phoneVerified,
+              enabled: true,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              suffixIcon: _phoneVerified
-                  ? const Padding(
-                      padding: EdgeInsets.all(8),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.verified_rounded,
-                              color: Color(0xFF4CAF50), size: 18),
-                          SizedBox(width: 4),
-                          Text('Verified',
-                              style: TextStyle(
-                                  fontSize: 11,
-                                  color: Color(0xFF4CAF50),
-                                  fontWeight: FontWeight.w700)),
-                        ],
-                      ),
-                    )
-                  : _phoneController.text.length >= 10 && !_otpSent
-                      ? GestureDetector(
-                          onTap: _sendOtp,
-                          child: Container(
-                            margin: const EdgeInsets.all(8),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: kYellow,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Text('Send OTP',
-                                style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700)),
-                          ),
-                        )
-                      : null,
             ),
-
-            if (_otpSent && !_phoneVerified) ...[
-              const SizedBox(height: 10),
-              Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF3F9F3),
-                  border: Border.all(color: const Color(0xFFC8E6C9)),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  children: [
-                    TextField(
-                      controller: _otpController,
-                      keyboardType: TextInputType.number,
-                      maxLength: 6,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      onChanged: (_) => setState(() => _otpError = ''),
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 8),
-                      decoration: const InputDecoration(
-                        hintText: '• • • •',
-                        hintStyle: TextStyle(
-                            color: Color(0xFFCCCCCC),
-                            fontSize: 20),
-                        border: InputBorder.none,
-                        counterText: '',
-                        contentPadding: EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 14),
-                      ),
-                    ),
-                    if (_otpError.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Text(_otpError,
-                            style: const TextStyle(
-                                color: Colors.red, fontSize: 12)),
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  GestureDetector(
-                    onTap: _sendOtp,
-                    child: const Text('Resend OTP',
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: kYellow,
-                            fontWeight: FontWeight.w600,
-                            decoration: TextDecoration.underline)),
-                  ),
-                  ElevatedButton(
-                    onPressed: _otpController.text.length >= 4
-                        ? _verifyOtp
-                        : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: kYellow,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 10),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                      elevation: 0,
-                    ),
-                    child: const Text('Verify',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700)),
-                  ),
-                ],
-              ),
-            ],
 
             const SizedBox(height: 16),
 
@@ -2537,6 +2568,99 @@ class _ConfirmSheetState extends State<_ConfirmSheet> {
               ),
             ),
 
+            const SizedBox(height: 16),
+            const Text('PRICE PREFERENCE',
+                style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFFAAAAAA),
+                    letterSpacing: 1.0)),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                const Text('What to share price range for coaches?',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: kTextDark)),
+                const SizedBox(width: 4),
+                Icon(Icons.info_outline, size: 14, color: Colors.grey[400]),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Custom Slider
+            if (_loadingTiers)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20.0),
+                  child: CircularProgressIndicator(color: kYellow),
+                ),
+              )
+            else ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: _PriceRangeSlider(
+                  selectedIndex: _selectedPriceIndex,
+                  steps: () {
+                    final steps = <String>[];
+                    if (_priceTiers.isNotEmpty) {
+                      steps.add(_priceTiers[0]['min'].toString());
+                      for (var i = 0; i < _priceTiers.length; i++) {
+                        final isLast = i == _priceTiers.length - 1;
+                        final maxVal = _priceTiers[i]['max'];
+                        steps.add(isLast ? '$maxVal+' : '$maxVal');
+                      }
+                    }
+                    return steps;
+                  }(),
+                  onChanged: (idx) => setState(() => _selectedPriceIndex = idx),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Cards Row
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: List.generate(_priceTiers.length, (idx) {
+                    final tier = _priceTiers[idx];
+                    final min = tier['min'];
+                    final max = tier['max'];
+                    final isLast = idx == _priceTiers.length - 1;
+                    final rangeText = isLast ? '₹$min - ₹$max+' : '₹$min - ₹$max';
+                    
+                    Color cardColor = const Color(0xFF2196F3);
+                    if (tier['color'] != null) {
+                      final hexStr = tier['color'].toString().replaceAll('#', '');
+                      if (hexStr.length == 6) {
+                        cardColor = Color(int.parse('FF$hexStr', radix: 16));
+                      } else if (hexStr.length == 8) {
+                        cardColor = Color(int.parse(hexStr, radix: 16));
+                      }
+                    }
+                    
+                    IconData cardIcon = Icons.person;
+                    if (tier['icon'] == 'headset_mic') {
+                      cardIcon = Icons.headset_mic;
+                    } else if (tier['icon'] == 'workspace_premium') {
+                      cardIcon = Icons.workspace_premium;
+                    }
+
+                    return Padding(
+                      padding: EdgeInsets.only(right: idx == _priceTiers.length - 1 ? 0.0 : 8.0),
+                      child: _buildPriceCard(
+                        index: idx,
+                        range: rangeText,
+                        label: tier['label'] ?? '',
+                        icon: cardIcon,
+                        color: cardColor,
+                        isSelected: _selectedPriceIndex == idx,
+                      ),
+                    );
+                  }),
+                ),
+              ),
+            ],
+
             if (widget.serviceMode != 'online') ...[
               const SizedBox(height: 14),
               const Text('Home Visit Address', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: kTextDark)),
@@ -2567,25 +2691,135 @@ class _ConfirmSheetState extends State<_ConfirmSheet> {
             ],
 
             const SizedBox(height: 16),
+            if (!isEnquiry) ...[
+              const Text('VOUCHER / PROMO CODE',
+                  style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFFAAAAAA),
+                      letterSpacing: 1.0)),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildTextField(
+                      _voucherController,
+                      'Enter voucher code',
+                      Icons.card_giftcard_rounded,
+                      textCapitalization: TextCapitalization.characters,
+                      enabled: !_applyingVoucher,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  ElevatedButton(
+                    onPressed: _applyingVoucher ? null : _applyVoucher,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: kYellow,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 14),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
+                    child: _applyingVoucher
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Text('Apply',
+                            style: TextStyle(
+                                color: Colors.black,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700)),
+                  ),
+                ],
+              ),
+              if (_voucherError != null) ...[
+                const SizedBox(height: 6),
+                Text(
+                  _voucherError!,
+                  style: const TextStyle(color: Colors.red, fontSize: 12),
+                ),
+              ],
+              if (_voucherSuccess != null) ...[
+                const SizedBox(height: 6),
+                Text(
+                  _voucherSuccess!,
+                  style: const TextStyle(color: Colors.green, fontSize: 12),
+                ),
+              ],
+              const SizedBox(height: 16),
+            ],
+
             const Divider(color: Color(0xFFEEEEEE)),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Column(
                 children: [
-                  Text(
-                    isEnquiry ? 'Enquiry charge' : 'Demo session total',
-                    style: const TextStyle(
-                        fontSize: 14, color: Color(0xFF666666)),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        isEnquiry ? 'Enquiry charge' : 'Demo session subtotal',
+                        style: const TextStyle(
+                            fontSize: 14, color: Color(0xFF666666)),
+                      ),
+                      Text(
+                        isEnquiry ? 'FREE' : '₹$totalAmount',
+                        style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: isEnquiry ? kPrimary : kTextDark),
+                      ),
+                    ],
                   ),
-                  Text(
-                    isEnquiry ? 'FREE' : '₹$totalAmount',
-                    style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color:
-                            isEnquiry ? kPrimary : kTextDark),
-                  ),
+                  if (!isEnquiry && _discountAmount > 0) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Voucher Discount',
+                          style: TextStyle(
+                              fontSize: 14, color: Colors.green),
+                        ),
+                        Text(
+                          '-₹$_discountAmount',
+                          style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.green),
+                        ),
+                      ],
+                    ),
+                  ],
+                  if (!isEnquiry) ...[
+                    const SizedBox(height: 8),
+                    const Divider(color: Color(0xFFEEEEEE)),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Total Payable',
+                          style: TextStyle(
+                              fontSize: 15, fontWeight: FontWeight.bold, color: kTextDark),
+                        ),
+                        Text(
+                          '₹${math.max(0, totalAmount - _discountAmount)}',
+                          style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                              color: kTextDark),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -2618,6 +2852,9 @@ class _ConfirmSheetState extends State<_ConfirmSheet> {
                             'address': widget.serviceMode == 'online'
                                 ? 'Online Session'
                                 : _addressController.text.trim(),
+                            'appliedVoucherCode': _appliedVoucherCode,
+                            'discountAmount': _discountAmount,
+                            'priceRange': _getPriceRangeString(_selectedPriceIndex),
                           };
                           widget.onConfirm(data);
                         }
@@ -2660,7 +2897,7 @@ class _ConfirmSheetState extends State<_ConfirmSheet> {
                                       fontWeight: FontWeight.w800)),
                             ),
                             const SizedBox(width: 8),
-                            Text('Confirm & Pay — ₹$totalAmount',
+                            Text('Confirm & Pay — ₹${math.max(0, totalAmount - _discountAmount)}',
                                 style: const TextStyle(
                                     color: Color(0xFF2C1A00),
                                     fontSize: 15,
@@ -2894,7 +3131,7 @@ class _SuccessDialog extends StatelessWidget {
                 ),
                 child: const Text('Scratch Your Reward 🎉',
                     style: TextStyle(
-                        color: Colors.white,
+                        color: Colors.black,
                         fontWeight: FontWeight.w700,
                         fontSize: 14)),
               ),
@@ -2946,6 +3183,106 @@ class _ServiceModeSection extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PriceRangeSlider extends StatelessWidget {
+  final int selectedIndex;
+  final List<String> steps;
+  final ValueChanged<int> onChanged;
+
+  const _PriceRangeSlider({
+    required this.selectedIndex,
+    required this.steps,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final numSteps = steps.length;
+    final maxStepsIndex = numSteps > 1 ? numSteps - 1 : 1;
+    
+    return Column(
+      children: [
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final width = constraints.maxWidth;
+            final stepWidth = width / maxStepsIndex;
+            
+            return Stack(
+              alignment: Alignment.centerLeft,
+              children: [
+                // Background track
+                Container(
+                  height: 4,
+                  width: width,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                // Highlighted track (yellow)
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  height: 4,
+                  width: stepWidth * (selectedIndex + 1),
+                  decoration: BoxDecoration(
+                    color: kYellow,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                // Step nodes (dots)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: List.generate(numSteps, (index) {
+                    final activeDotIndex = selectedIndex + 1;
+                    final isReached = index <= activeDotIndex;
+                    return GestureDetector(
+                      onTap: () {
+                        if (index == 0 || index == 1) {
+                          onChanged(0);
+                        } else {
+                          onChanged(index - 1);
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        color: Colors.transparent,
+                        child: Container(
+                          width: 14,
+                          height: 14,
+                          decoration: BoxDecoration(
+                            color: isReached ? kYellow : Colors.white,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isReached ? kYellow : Colors.grey[400]!,
+                              width: 2,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+              ],
+            );
+          },
+        ),
+        const SizedBox(height: 8),
+        // Step Labels
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: steps.map((step) => Text(
+            step,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey,
+            ),
+          )).toList(),
         ),
       ],
     );

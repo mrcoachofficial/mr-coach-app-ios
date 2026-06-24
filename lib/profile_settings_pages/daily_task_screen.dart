@@ -1097,17 +1097,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> with TickerProvider
     _lastPosition = null;
   }
 
-  void _fastComplete() {
-    _stopTracking();
-    setState(() {
-      _currentValue = widget.target;
-      _isRunning = false;
-      _isPaused = false;
-    });
-    _ringController.animateTo(1.0, duration: const Duration(milliseconds: 300));
-    Future.delayed(const Duration(milliseconds: 500), _onComplete);
-  }
-
   Future<void> _onComplete() async {
     // Send progress to backend
     await ApiService.updateChallengeProgress(widget.challengeId, widget.target);
@@ -1186,8 +1175,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> with TickerProvider
                     _buildStats(iconColor),
                     const SizedBox(height: 24),
                     _buildStartButton(),
-                    const SizedBox(height: 12),
-                    _buildFastCompleteButton(),
                     const SizedBox(height: 20),
                     _buildRewardPreview(),
                   ],
@@ -1279,20 +1266,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> with TickerProvider
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildFastCompleteButton() {
-    return OutlinedButton.icon(
-      onPressed: _fastComplete,
-      style: OutlinedButton.styleFrom(
-        foregroundColor: kYellowDark,
-        side: const BorderSide(color: kYellow, width: 2),
-        minimumSize: const Size(double.infinity, 48),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      ),
-      icon: const Icon(Icons.flash_on_rounded),
-      label: const Text('FAST COMPLETE (DEMO)', style: TextStyle(fontWeight: FontWeight.w900)),
     );
   }
 

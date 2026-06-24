@@ -746,7 +746,7 @@ class _ServiceScreenState extends State<ServiceScreen> {
         children: [
           _heroImageUrl.isNotEmpty
               ? Image.network(
-                  ApiService.getMediaUrl(_heroImageUrl),
+                  ApiService.getMediaUrl(_heroImageUrl, width: 800),
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => Image.asset(
                     'assets/images/fitness.jpeg',

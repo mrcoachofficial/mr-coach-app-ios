@@ -41,6 +41,51 @@
           ]
         }
       }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:91035596332:android:16970cbf88f21936f00389",
+        "android_client_info": {
+          "package_name": "com.mrcoachclient.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "91035596332-djnmin4mo85e55qu15r8cf87shrprq3t.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mrcoachclient.app",
+            "certificate_hash": "27999fc5f4b4a486758332b2105896c64770e456"
+          }
+        },
+        {
+          "client_id": "91035596332-gheu9nk86eufnfdap7fadfmjl1tainvp.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mrcoachclient.app",
+            "certificate_hash": "40aae7c404b6a6b72469c671c2d40692e8d6ba54"
+          }
+        },
+        {
+          "client_id": "91035596332-akkmai05bpof4jjaau3tg126seba4ip4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAPPZaq4VeREzkW4mXSSq_ePOR5ogP-l-o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "91035596332-akkmai05bpof4jjaau3tg126seba4ip4.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
     }
   ],
   "configuration_version": "1"

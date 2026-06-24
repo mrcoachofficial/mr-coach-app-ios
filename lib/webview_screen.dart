@@ -78,20 +78,20 @@ class _EventWebViewScreenState extends State<EventWebViewScreen> {
 
     // 1. Enforce absolute URL formatting and resolve relative paths
     String targetUrl = widget.url.trim();
-    if (!targetUrl.startsWith('https://mrcoach.in')) {
+    if (!targetUrl.startsWith('https://mrcoach.in') && !targetUrl.startsWith('https://www.mrcoach.in')) {
       if (targetUrl.startsWith('/')) {
-        targetUrl = 'https://mrcoach.in$targetUrl';
+        targetUrl = 'https://www.mrcoach.in$targetUrl';
       } else {
         // Resolve a plain ID or slug
         if (!widget.allowAnyDomain) {
-          targetUrl = 'https://mrcoach.in/events/$targetUrl';
+          targetUrl = 'https://www.mrcoach.in/events/$targetUrl';
         }
       }
     }
 
     // 2. Reject URLs that do not belong to the website domain (Fallback to default events list page)
-    if (!widget.allowAnyDomain && !targetUrl.startsWith('https://mrcoach.in')) {
-      targetUrl = 'https://mrcoach.in/events';
+    if (!widget.allowAnyDomain && !targetUrl.startsWith('https://mrcoach.in') && !targetUrl.startsWith('https://www.mrcoach.in')) {
+      targetUrl = 'https://www.mrcoach.in/events';
     }
 
     _validatedUrl = targetUrl;
@@ -109,6 +109,7 @@ class _EventWebViewScreenState extends State<EventWebViewScreen> {
               }
               // Only navigate if it is the verified mrcoach.in domain, razorpay checkout, or payment route
               if (url.startsWith('https://mrcoach.in') ||
+                  url.startsWith('https://www.mrcoach.in') ||
                   url.contains('razorpay') ||
                   url.contains('api/payment') ||
                   url.contains('checkout')) {

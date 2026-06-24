@@ -1058,76 +1058,91 @@ class _FullScreenRewardContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: Colors.white,
-      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        Container(
-          width: 90,
-          height: 90,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: entry.theme.gradient),
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                  color: entry.theme.accent.withOpacity(0.4),
-                  blurRadius: 20,
-                  offset: const Offset(0, 6))
-            ],
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 90,
+            height: 90,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: entry.theme.gradient),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                    color: entry.theme.accent.withOpacity(0.4),
+                    blurRadius: 20,
+                    offset: const Offset(0, 6))
+              ],
+            ),
+            child: const Center(
+                child: Icon(Icons.emoji_events_rounded,
+                    color: Colors.white, size: 46)),
           ),
-          child: const Center(
-              child: Icon(Icons.emoji_events_rounded,
-                  color: Colors.white, size: 46)),
-        ),
-        const SizedBox(height: 16),
-        Text(entry.reward,
+          const SizedBox(height: 16),
+          Text(
+            entry.reward,
+            textAlign: TextAlign.center,
             style: TextStyle(
                 fontSize: 56,
                 fontWeight: FontWeight.w900,
                 color: entry.theme.accent,
-                letterSpacing: -2)),
-        Text(entry.subReward,
+                letterSpacing: -2),
+          ),
+          Text(
+            entry.subReward,
+            textAlign: TextAlign.center,
             style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
-                color: entry.theme.accent.withOpacity(0.8))),
-        const SizedBox(height: 10),
-        Container(
-          padding: const EdgeInsets.symmetric(
-              horizontal: 20, vertical: 8),
-          decoration: BoxDecoration(
-              color: const Color(0xFFF5F5F5),
-              borderRadius: BorderRadius.circular(10)),
-          child: Text(entry.condition,
-              style: const TextStyle(
-                  fontSize: 13,
-                  color: _kTextMid,
-                  fontWeight: FontWeight.w600)),
-        ),
-        const SizedBox(height: 14),
-        Container(
-          padding: const EdgeInsets.symmetric(
-              horizontal: 28, vertical: 14),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(colors: entry.theme.gradient),
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                  color: entry.theme.accent.withOpacity(0.4),
-                  blurRadius: 14,
-                  offset: const Offset(0, 5))
-            ],
+                color: entry.theme.accent.withOpacity(0.8)),
           ),
-          child: const Text('CLAIM NOW',
-              style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white)),
-        ),
-        const SizedBox(height: 8),
-        Text(entry.expiry,
-            style: const TextStyle(fontSize: 11, color: _kTextMid)),
-      ]),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(
+                horizontal: 20, vertical: 8),
+            decoration: BoxDecoration(
+                color: const Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.circular(10)),
+            child: Text(entry.condition,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    fontSize: 13,
+                    color: _kTextMid,
+                    fontWeight: FontWeight.w600)),
+          ),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.symmetric(
+                horizontal: 28, vertical: 14),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: entry.theme.gradient),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                    color: entry.theme.accent.withOpacity(0.4),
+                    blurRadius: 14,
+                    offset: const Offset(0, 5))
+              ],
+            ),
+            child: const Text('CLAIM NOW',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white)),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            entry.expiry,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 11, color: _kTextMid),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1618,73 +1633,85 @@ class _CardRewardContent extends StatelessWidget {
       color: Colors.white,
       width: double.infinity,
       height: double.infinity,
-      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        Container(
-          width: 64,
-          height: 40,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: theme.gradient),
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                  color: theme.accent.withOpacity(0.35),
-                  blurRadius: 14,
-                  offset: const Offset(0, 4))
-            ],
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 64,
+            height: 40,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: theme.gradient),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                    color: theme.accent.withOpacity(0.35),
+                    blurRadius: 14,
+                    offset: const Offset(0, 4))
+              ],
+            ),
+            child: const Center(
+                child: Icon(Icons.emoji_events_rounded,
+                    color: Colors.white, size: 30)),
           ),
-          child: const Center(
-              child: Icon(Icons.emoji_events_rounded,
-                  color: Colors.white, size: 30)),
-        ),
-        const SizedBox(height: 10),
-        Text('₹100',
+          const SizedBox(height: 10),
+          Text(
+            '₹100',
+            textAlign: TextAlign.center,
             style: TextStyle(
                 fontSize: 38,
                 fontWeight: FontWeight.w900,
                 color: theme.accent,
-                letterSpacing: -1)),
-        const Text('Cashback',
+                letterSpacing: -1),
+          ),
+          const Text(
+            'Cashback',
+            textAlign: TextAlign.center,
             style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: _kTextMid)),
-        const SizedBox(height: 6),
-        Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-          decoration: BoxDecoration(
-              color: const Color(0xFFF5F5F5),
-              borderRadius: BorderRadius.circular(8)),
-          child: const Text('On next booking',
-              style: TextStyle(
-                  fontSize: 10,
-                  color: _kTextMid,
-                  fontWeight: FontWeight.w600)),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(colors: theme.gradient),
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                  color: theme.accent.withOpacity(0.35),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3))
-            ],
+                color: _kTextMid),
           ),
-          child: const Text('CLAIM NOW',
-              style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white)),
-        ),
-      ]),
+          const SizedBox(height: 6),
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+            decoration: BoxDecoration(
+                color: const Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.circular(8)),
+            child: const Text('On next booking',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontSize: 10,
+                    color: _kTextMid,
+                    fontWeight: FontWeight.w600)),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: theme.gradient),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                    color: theme.accent.withOpacity(0.35),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3))
+              ],
+            ),
+            child: const Text('CLAIM NOW',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white)),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1727,26 +1754,51 @@ class _GridScratchCardState extends State<_GridScratchCard>
     return AnimatedBuilder(
       animation: _glowAnim,
       builder: (_, __) => GestureDetector(
-        onTap: e.scratched
-            ? null
-            : () {
-                Navigator.push(
-                  context,
-                  PageRouteBuilder(
-                    transitionDuration:
-                        const Duration(milliseconds: 420),
-                    reverseTransitionDuration:
-                        const Duration(milliseconds: 380),
-                    pageBuilder: (_, animation, __) => FadeTransition(
-                      opacity: animation,
-                      child: FullScreenScratchPage(
-                        entry: e,
-                        onScratched: widget.onScratched,
-                      ),
-                    ),
+        onTap: () {
+          if (!e.scratched) {
+            Navigator.push(
+              context,
+              PageRouteBuilder(
+                transitionDuration:
+                    const Duration(milliseconds: 420),
+                reverseTransitionDuration:
+                    const Duration(milliseconds: 380),
+                pageBuilder: (_, animation, __) => FadeTransition(
+                  opacity: animation,
+                  child: FullScreenScratchPage(
+                    entry: e,
+                    onScratched: widget.onScratched,
                   ),
-                );
-              },
+                ),
+              ),
+            );
+          } else if (!e.claimed) {
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (_) => RewardRevealDialog(
+                card: e,
+                onClaim: () {
+                  setState(() => e.claimed = true);
+                  ScratchCardStore().updateStatusOnBackend(e.id, 'claimed');
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text(
+                      '${e.reward} ${e.subReward} claimed! 🎉',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w800, color: _kTextDark),
+                    ),
+                    backgroundColor: _kYellow,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                  ));
+                },
+                onLater: () => Navigator.pop(context),
+              ),
+            );
+          }
+        },
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(22),
@@ -1961,78 +2013,92 @@ class _GridRewardContent extends StatelessWidget {
       color: Colors.white,
       width: double.infinity,
       height: double.infinity,
-      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        Container(
-          width: 56,
-          height: 56,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: entry.theme.gradient),
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                  color: entry.theme.accent.withOpacity(0.35),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4))
-            ],
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: entry.theme.gradient),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                    color: entry.theme.accent.withOpacity(0.35),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4))
+              ],
+            ),
+            child: const Center(
+                child: Icon(Icons.emoji_events_rounded,
+                    color: Colors.white, size: 26)),
           ),
-          child: const Center(
-              child: Icon(Icons.emoji_events_rounded,
-                  color: Colors.white, size: 26)),
-        ),
-        const SizedBox(height: 8),
-        Text(entry.reward,
+          const SizedBox(height: 8),
+          Text(
+            entry.reward,
+            textAlign: TextAlign.center,
             style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.w900,
                 color: entry.theme.accent,
-                letterSpacing: -1)),
-        Text(entry.subReward,
+                letterSpacing: -1),
+          ),
+          Text(
+            entry.subReward,
+            textAlign: TextAlign.center,
             style: const TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: _kTextMid)),
-        const SizedBox(height: 5),
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: 10),
-          padding:
-              const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-          decoration: BoxDecoration(
-              color: const Color(0xFFF5F5F5),
-              borderRadius: BorderRadius.circular(6)),
-          child: Text(entry.condition,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                  fontSize: 8,
-                  color: _kTextMid,
-                  fontWeight: FontWeight.w600)),
-        ),
-        const SizedBox(height: 6),
-        Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(colors: entry.theme.gradient),
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                  color: entry.theme.accent.withOpacity(0.35),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3))
-            ],
+                color: _kTextMid),
           ),
-          child: const Text('CLAIM',
-              style: TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white)),
-        ),
-        const SizedBox(height: 4),
-        Text(entry.expiry,
-            style: const TextStyle(fontSize: 8, color: _kTextMid)),
-      ]),
+          const SizedBox(height: 5),
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 10),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+            decoration: BoxDecoration(
+                color: const Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.circular(6)),
+            child: Text(entry.condition,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    fontSize: 8,
+                    color: _kTextMid,
+                    fontWeight: FontWeight.w600)),
+          ),
+          const SizedBox(height: 6),
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: entry.theme.gradient),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                    color: entry.theme.accent.withOpacity(0.35),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3))
+              ],
+            ),
+            child: const Text('CLAIM',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white)),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            entry.expiry,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 8, color: _kTextMid),
+          ),
+        ],
+      ),
     );
   }
 }
