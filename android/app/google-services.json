@@ -59,11 +59,27 @@
           }
         },
         {
+          "client_id": "91035596332-dn12q9gocvch0okfo0euu4iahu035jkb.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mrcoachclient.app",
+            "certificate_hash": "27999fc5f4b4a4b675833282105896c64778e456"
+          }
+        },
+        {
           "client_id": "91035596332-gheu9nk86eufnfdap7fadfmjl1tainvp.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.mrcoachclient.app",
             "certificate_hash": "40aae7c404b6a6b72469c671c2d40692e8d6ba54"
+          }
+        },
+        {
+          "client_id": "91035596332-q1jdv55r2or87npk54ib6c24c24rrso6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mrcoachclient.app",
+            "certificate_hash": "40aae7c404d6a6b72469c671c2d48692ebd6ba54"
           }
         },
         {

@@ -116,6 +116,7 @@ class Booking {
   final String?   enquirerPhone;
   final String?   doubtMessage;
   final DateTime  bookedAt;
+  final List<BookedService>? additionalServices;
 
   Booking({
     required this.bookingId,
@@ -136,6 +137,7 @@ class Booking {
     this.doubtMessage,
     required this.bookedAt,
     required int totalAmount,
+    this.additionalServices,
   });
 
   factory Booking.fromJson(Map<String, dynamic> json) {
@@ -174,6 +176,16 @@ class Booking {
       status = BookingStatus.active;
     }
 
+    final List<BookedService>? additionalServices = json['additionalServices'] != null
+        ? (json['additionalServices'] as List)
+            .map((item) => BookedService(
+                  id: item['id'] ?? item['_id'] ?? '',
+                  name: item['name'] ?? '',
+                  emoji: item['emoji'] ?? '➕',
+                ))
+            .toList()
+        : null;
+
     return Booking(
       bookingId: json['_id'] ?? '',
       serviceCategory: cat,
@@ -195,6 +207,7 @@ class Booking {
       enquirerPhone: json['mobileNumber'],
       bookedAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now() : DateTime.now(),
       totalAmount: (json['price'] as num?)?.toInt() ?? 0,
+      additionalServices: additionalServices,
     );
   }
 

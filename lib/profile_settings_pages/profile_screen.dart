@@ -319,6 +319,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
           borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
       builder: (ctx) => _EditSheet(
         name: _name,
+        email: _email,
         alternatePhone: _alternatePhone,
         address: _address,
         gender: _gender,
@@ -336,6 +337,7 @@ class _ProfilePageState extends State<ProfilePage> with TickerProviderStateMixin
           Navigator.pop(ctx);
           setState(() {
             _name = updatedData['name'];
+            _email = updatedData['email'];
             _alternatePhone = updatedData['alternatePhone'];
             _address = updatedData['address'];
             _gender = updatedData['gender'];
@@ -4253,12 +4255,13 @@ class _AvatarSheet extends StatelessWidget {
 }
 
 class _EditSheet extends StatefulWidget {
-  final String name, alternatePhone, address, gender, dateOfBirth, serviceType, preferredLanguage, area, pincode, district, stateField, emergencyContact, fitnessGoal;
+  final String name, email, alternatePhone, address, gender, dateOfBirth, serviceType, preferredLanguage, area, pincode, district, stateField, emergencyContact, fitnessGoal;
   final int? age;
   final Function(Map<String, dynamic> updatedData) onSave;
 
   const _EditSheet({
     required this.name,
+    required this.email,
     required this.alternatePhone,
     required this.address,
     required this.gender,
@@ -4281,6 +4284,7 @@ class _EditSheet extends StatefulWidget {
 
 class _EditSheetState extends State<_EditSheet> {
   late TextEditingController _nameCtrl;
+  late TextEditingController _emailCtrl;
   late TextEditingController _phoneCtrl;
   late TextEditingController _ageCtrl;
   late TextEditingController _dobCtrl;
@@ -4300,6 +4304,7 @@ class _EditSheetState extends State<_EditSheet> {
   void initState() {
     super.initState();
     _nameCtrl = TextEditingController(text: widget.name);
+    _emailCtrl = TextEditingController(text: widget.email);
     _phoneCtrl = TextEditingController(text: widget.alternatePhone);
     _ageCtrl = TextEditingController(text: widget.age?.toString() ?? '');
     _dobCtrl = TextEditingController(text: widget.dateOfBirth);
@@ -4319,6 +4324,7 @@ class _EditSheetState extends State<_EditSheet> {
   @override
   void dispose() {
     _nameCtrl.dispose();
+    _emailCtrl.dispose();
     _phoneCtrl.dispose();
     _ageCtrl.dispose();
     _dobCtrl.dispose();
@@ -4459,6 +4465,13 @@ class _EditSheetState extends State<_EditSheet> {
                       icon: Icons.contact_phone_outlined,
                       type: TextInputType.phone,
                     ),
+                    const SizedBox(height: 12),
+                    _Field(
+                      ctrl: _emailCtrl,
+                      label: 'Email Address',
+                      icon: Icons.mail_outline_rounded,
+                      type: TextInputType.emailAddress,
+                    ),
 
                     const SizedBox(height: 20),
                     _buildSectionHeader('Service Preference'),
@@ -4548,6 +4561,7 @@ class _EditSheetState extends State<_EditSheet> {
                       onPressed: () {
                         final data = {
                           'name': _nameCtrl.text.trim(),
+                          'email': _emailCtrl.text.trim(),
                           'alternatePhone': _phoneCtrl.text.trim(),
                           'age': int.tryParse(_ageCtrl.text.trim()),
                           'dateOfBirth': _dobCtrl.text.trim(),

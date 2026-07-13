@@ -246,17 +246,17 @@ class _Home2ScreenState extends State<Home2Screen> with TickerProviderStateMixin
 
   List<ServiceTile> _tiles(BuildContext ctx) => [
     ServiceTile(icon: Icons.fitness_center,          
-     iconBg: kIconBgYellow,iconColor: const Color.fromARGB(255, 0, 0, 0), title: 'Fitness',       subtitle: 'Train & Build',   imagePath: 'assets/images/slider.jpeg', networkImageUrl: _dynamicImageMap['Fitness'],      onTap: () => Navigator.push(ctx, _route(FitnessScreen(categoryImageUrl: _dynamicInnerBannerMap['Fitness'])))),
+     iconBg: kIconBgYellow,iconColor: const Color.fromARGB(255, 0, 0, 0), title: 'Fitness',       subtitle: 'Train & Build',   imagePath: 'assets/images/slider.jpeg', networkImageUrl: _dynamicImageMap['Fitness'],      onTap: () => Navigator.push(ctx, _route(const FitnessScreen()))),
     ServiceTile(icon: Icons.monitor_heart,            
-    iconBg: kIconBgGreen,  iconColor: const Color.fromARGB(255, 0, 0, 0), title: 'Physio',        subtitle: 'Heal & Recover',  imagePath: 'assets/images/phy2.jpeg', networkImageUrl: _dynamicImageMap['Physio'],        onTap: () => Navigator.push(ctx, _route(PhysioScreen(categoryImageUrl: _dynamicInnerBannerMap['Physio'])))),
+    iconBg: kIconBgGreen,  iconColor: const Color.fromARGB(255, 0, 0, 0), title: 'Physio',        subtitle: 'Heal & Recover',  imagePath: 'assets/images/phy2.jpeg', networkImageUrl: _dynamicImageMap['Physio'],        onTap: () => Navigator.push(ctx, _route(const PhysioScreen()))),
     ServiceTile(icon: Icons.sports_soccer,          
-    iconBg: kIconBgBlue,   iconColor: const Color.fromARGB(255, 0, 0, 0),  title: 'Sports',        subtitle: 'Play & Perform',  imagePath: 'assets/images/spt2.jpeg', networkImageUrl: _dynamicImageMap['Sports'],        onTap: () => Navigator.push(ctx, _route(SportsScreen(categoryImageUrl: _dynamicInnerBannerMap['Sports'])))),
+    iconBg: kIconBgBlue,   iconColor: const Color.fromARGB(255, 0, 0, 0),  title: 'Sports',        subtitle: 'Play & Perform',  imagePath: 'assets/images/spt2.jpeg', networkImageUrl: _dynamicImageMap['Sports'],        onTap: () => Navigator.push(ctx, _route(const SportsScreen()))),
     ServiceTile(icon: Icons.self_improvement_outlined,
-    iconBg: kIconBgPurple,iconColor:  const Color.fromARGB(255, 0, 0, 0),title: 'Yoga',          subtitle: 'Mind & Body',     imagePath: 'assets/images/yoga.jpeg', networkImageUrl: _dynamicImageMap['Yoga'],        onTap: () => Navigator.push(ctx, _route(YogaBooking1Screen(categoryImageUrl: _dynamicInnerBannerMap['Yoga'])))),
+    iconBg: kIconBgPurple,iconColor:  const Color.fromARGB(255, 0, 0, 0),title: 'Yoga',          subtitle: 'Mind & Body',     imagePath: 'assets/images/yoga.jpeg', networkImageUrl: _dynamicImageMap['Yoga'],        onTap: () => Navigator.push(ctx, _route(const YogaBooking1Screen()))),
     ServiceTile(icon: Icons.monitor,                  
-     iconBg: kIconBgRed,    iconColor:  const Color.fromARGB(255, 0, 0, 0), title: 'Therapy',       subtitle: 'Care & Support',  imagePath: 'assets/images/online1.jpeg', networkImageUrl: _dynamicImageMap['Therapy'],     onTap: () => Navigator.push(ctx, _route(TherapyScreen(categoryImageUrl: _dynamicInnerBannerMap['Therapy'])))),
+     iconBg: kIconBgRed,    iconColor:  const Color.fromARGB(255, 0, 0, 0), title: 'Therapy',       subtitle: 'Care & Support',  imagePath: 'assets/images/online1.jpeg', networkImageUrl: _dynamicImageMap['Therapy'],     onTap: () => Navigator.push(ctx, _route(const TherapyScreen()))),
     ServiceTile(icon: Icons.restaurant,              
-      iconBg: kIconBgOrange, iconColor: const Color.fromARGB(255, 0, 0, 0), title: 'Nutrition',     subtitle: 'Eat & Live Well', imagePath: 'assets/images/yellowtheme.jpeg', networkImageUrl: _dynamicImageMap['Nutrition'], onTap: () => Navigator.push(ctx, _route(DietBooking1Screen(categoryImageUrl: _dynamicInnerBannerMap['Nutrition'])))),
+      iconBg: kIconBgOrange, iconColor: const Color.fromARGB(255, 0, 0, 0), title: 'Nutrition',     subtitle: 'Eat & Live Well', imagePath: 'assets/images/yellowtheme.jpeg', networkImageUrl: _dynamicImageMap['Nutrition'], onTap: () => Navigator.push(ctx, _route(const DietBooking1Screen()))),
   ];
 
   List<EventItem> get _events => [
@@ -275,6 +275,9 @@ class _Home2ScreenState extends State<Home2Screen> with TickerProviderStateMixin
 
   List<dynamic> _dynamicBanners = ApiService.cachedBanners ?? [];
   bool _loadingBanners = ApiService.cachedBanners == null;
+
+  List<dynamic> _dynamicProducts = [];
+  bool _loadingProducts = true;
 
   int _unreadCount = 0;
   Timer? _notifTimer;
@@ -326,6 +329,7 @@ class _Home2ScreenState extends State<Home2Screen> with TickerProviderStateMixin
       _fetchUnreadCount();
     });
     _initLocation();
+    _fetchDynamicProducts();
   }
 
   Future<void> _fetchUnreadCount() async {
@@ -402,6 +406,25 @@ class _Home2ScreenState extends State<Home2Screen> with TickerProviderStateMixin
       if (mounted) {
         setState(() {
           _loadingBanners = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _fetchDynamicProducts() async {
+    try {
+      final products = await ApiService.getProducts();
+      if (mounted) {
+        setState(() {
+          _dynamicProducts = products;
+          _loadingProducts = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Failed to load dynamic products: $e');
+      if (mounted) {
+        setState(() {
+          _loadingProducts = false;
         });
       }
     }
@@ -810,29 +833,58 @@ class _Home2ScreenState extends State<Home2Screen> with TickerProviderStateMixin
     ]);
   }
 Widget _buildShopCarousel() {
+    final hasDynamic = _dynamicProducts.isNotEmpty;
+    final count = hasDynamic ? _dynamicProducts.length : _shopItems.length;
+
     return Column(children: [
       SizedBox(
         height: 152,
         child: PageView.builder(
           controller: _shopCtrl,
-          itemCount: _shopItems.length,
+          itemCount: count,
           onPageChanged: (i) => setState(() => _currentShop = i),
           itemBuilder: (ctx, i) {
-            final it = _shopItems[i];
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _HorizontalCard(
-                imagePath: it.imagePath, title: it.title,
-                date: it.date, time: it.time, location: it.location,
-                isActive: it.isActive,
-                onTap: () => Navigator.push(ctx, _route(it.detailPage)),
-              ),
-            );
+            if (hasDynamic) {
+              final prod = _dynamicProducts[i];
+              final String title = prod['title'] ?? '';
+              final String price = prod['price'] != null ? '₹${prod['price']}' : '';
+              final String status = prod['status'] ?? 'In Stock';
+              final String delivery = prod['deliveryTime'] ?? 'Free Delivery';
+              final String loc = prod['location'] ?? 'Ships from Chennai';
+              final String img = prod['imageUrl'] ?? '';
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _HorizontalCard(
+                  imagePath: img,
+                  title: title.toUpperCase(),
+                  date: price.isNotEmpty ? '$price ($status)' : status,
+                  time: delivery,
+                  location: loc,
+                  isActive: status.toLowerCase() != 'out of stock',
+                  onTap: () => Navigator.push(ctx, _route(const Shop1Screen())),
+                ),
+              );
+            } else {
+              final it = _shopItems[i];
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _HorizontalCard(
+                  imagePath: it.imagePath,
+                  title: it.title,
+                  date: it.date,
+                  time: it.time,
+                  location: it.location,
+                  isActive: it.isActive,
+                  onTap: () => Navigator.push(ctx, _route(it.detailPage)),
+                ),
+              );
+            }
           },
         ),
       ),
       const SizedBox(height: 10),
-      _Dots(current: _currentShop, total: _shopItems.length),
+      _Dots(current: _currentShop, total: count),
     ]);
   }
 
@@ -1320,8 +1372,17 @@ class _HorizontalCard extends StatelessWidget {
               width: 96,
               child: Stack(fit: StackFit.expand, children: [
                 imagePath != null
-                    ? Image.asset(imagePath!, fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _imgFallback())
+                    ? (imagePath!.startsWith('http') || imagePath!.startsWith('/') || imagePath!.contains('uploads/') || imagePath!.contains('cloudinary'))
+                        ? Image.network(
+                            ApiService.getMediaUrl(imagePath!),
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => _imgFallback(),
+                          )
+                        : Image.asset(
+                            imagePath!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => _imgFallback(),
+                          )
                     : _imgFallback(),
                 Positioned(left: 0, top: 0, bottom: 0, width: 4,
                   child: Container(color: kPrimary)),

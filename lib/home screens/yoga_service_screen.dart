@@ -1,99 +1,195 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'dart:math' as math;
+import 'package:flutter/foundation.dart';
+import 'package:mrcoach/utils/razorpay_payment_helper.dart';
+import 'package:mrcoach/services/api_service.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:mrcoach/home%20screens/home2_screen.dart';
 import 'package:mrcoach/home%20screens/scratch_card_screen.dart';
 import 'package:mrcoach/home%20screens/med_screen.dart';
 import 'package:mrcoach/profile_settings_pages/booking_store.dart';
-import 'package:mrcoach/services/api_service.dart';
-import 'package:razorpay_flutter/razorpay_flutter.dart';
-import 'package:mrcoach/utils/razorpay_payment_helper.dart';
 
 class YogaService {
   final String id;
   final String name;
   final String description;
   final String emoji;
+  final ServiceCategory category;
 
   const YogaService({
     required this.id,
     required this.name,
-    
     required this.description,
     required this.emoji,
+    required this.category,
   });
 }
+enum ServiceFilterCategory {
+  fitness,
+  physio,
+  sports,
+  yoga,
+  therapy,
+  nutrition,
+}
 
+extension ServiceFilterCategoryExt on ServiceFilterCategory {
+  String get label {
+    switch (this) {
+      case ServiceFilterCategory.fitness:   return 'Fitness';
+      case ServiceFilterCategory.physio:    return 'Physio';
+      case ServiceFilterCategory.sports:    return 'Sports';
+      case ServiceFilterCategory.yoga:      return 'Yoga';
+      case ServiceFilterCategory.therapy:   return 'Therapy';
+      case ServiceFilterCategory.nutrition: return 'Nutrition';
+    }
+  }
+
+  String get emoji {
+    switch (this) {
+      case ServiceFilterCategory.fitness:   return '🏋️';
+      case ServiceFilterCategory.yoga:      return '🧘';
+      case ServiceFilterCategory.physio:    return '🩺';
+      case ServiceFilterCategory.sports:    return '⚽';
+      case ServiceFilterCategory.therapy:   return '🌿';
+      case ServiceFilterCategory.nutrition: return '🥗';
+    }
+  }
+}
+
+// ─── Services list with category tags ────────────────────────────
 const List<YogaService> kYogaServices = [
-  YogaService(id: '0',  name: 'Meditation',                description: 'Mindfulness & breathing techniques',       emoji: '🧘'),
-  YogaService(id: '1',  name: 'Online Yoga',               description: 'Live sessions from home',                  emoji: '🖥️'),
-  YogaService(id: '2',  name: 'Power Yoga',                description: 'High-energy strength & flexibility',       emoji: '💪'),
-  YogaService(id: '3',  name: 'Pre / Post Pregnancy Yoga', description: 'Safe yoga for all stages',                 emoji: '🤰'),
-  YogaService(id: '4',  name: 'Stress Relief',             description: 'Calming asanas & relaxation',              emoji: '🌿'),
-  YogaService(id: '5',  name: 'Therapeutic Yoga',          description: 'Healing & rehabilitation focused',         emoji: '🩺'),
-  YogaService(id: '6',  name: 'Yoga at Home',              description: 'Personalised in-home sessions',            emoji: '🏠'),
-  YogaService(id: '7',  name: 'Strength Training',         description: 'Build muscle & power with expert guidance',emoji: '🏋️'),
-  YogaService(id: '8',  name: 'Weight Loss',               description: 'Fat-loss programs tailored to your body',  emoji: '⚖️'),
-  YogaService(id: '9',  name: 'Body Toning',               description: 'Sculpt & tone with targeted exercises',    emoji: '🎯'),
-  YogaService(id: '10', name: 'Kids Fitness',              description: 'Fun, age-appropriate fitness programs',    emoji: '🧒'),
-  YogaService(id: '11', name: 'Posture Correction',        description: 'Correct imbalances & improve alignment',   emoji: '🧍'),
-  YogaService(id: '12', name: 'Senior Fitness',            description: 'Gentle fitness for older adults',          emoji: '🧓'),
-  YogaService(id: '13', name: 'Muscle Gain',               description: 'Structured hypertrophy programs',          emoji: '💪'),
-  YogaService(id: '14', name: 'Personal Trainer',          description: 'One-on-one certified trainer sessions',    emoji: '🏅'),
-  YogaService(id: '15', name: 'Back / Neck / Knee Pain',   description: 'Relieve pain and improve movement.',       emoji: '🩻'),
-  YogaService(id: '16', name: 'Elderly Care',              description: 'Help seniors stay active and independent.',emoji: '👴'),
-  YogaService(id: '17', name: 'Home Physiotherapy',        description: 'Professional physiotherapy at home.',      emoji: '🏠'),
-  YogaService(id: '18', name: 'Mobility Training',         description: 'Improve balance, flexibility, movement.',  emoji: '🚶'),
-  YogaService(id: '19', name: 'Physiotherapist (Home/Online)', description: 'Expert physiotherapy at home or online.', emoji: '💻'),
-  YogaService(id: '20', name: 'Post Surgery Recovery',     description: 'Regain strength after surgery safely.',    emoji: '🏥'),
-  YogaService(id: '21', name: 'Posture Correction (Physio)', description: 'Correct body posture with expert guidance.', emoji: '🧍'),
-  YogaService(id: '22', name: 'Sports Injury Rehab',       description: 'Recover from sports injuries faster.',     emoji: '⚽'),
-  YogaService(id: '23', name: 'Stroke Rehab',              description: 'Specialized rehabilitation after stroke.', emoji: '🧠'),
-  YogaService(id: '24', name: 'Acupressure',               description: 'Stimulate pressure points to reduce pain.',emoji: '🖐️'),
-  YogaService(id: '25', name: 'Acupuncture',               description: 'Traditional needle therapy for pain relief.', emoji: '🪡'),
-  YogaService(id: '26', name: 'Cupping Therapy',           description: 'Improve blood flow and reduce muscle tension.', emoji: '🥣'),
-  YogaService(id: '27', name: 'Detox Therapy',             description: 'Cleanse your body with natural detox therapies.', emoji: '🌿'),
-  YogaService(id: '28', name: 'Naturopathy',               description: 'Natural healing focused on overall wellness.', emoji: '🍃'),
-  YogaService(id: '29', name: 'Touch Healing',             description: 'Gentle healing for relaxation and balance.', emoji: '✨'),
-  YogaService(id: '30', name: 'Athletics',                 description: 'Improve speed, stamina, agility.',          emoji: '🏃'),
-  YogaService(id: '31', name: 'Badminton',                 description: 'Enhance reflexes, footwork, and strategy.', emoji: '🏸'),
-  YogaService(id: '32', name: 'Boxing / Kickboxing',       description: 'Build strength and self-defense skills.',   emoji: '🥊'),
-  YogaService(id: '33', name: 'Cricket',                   description: 'Coaching for batting, bowling, fielding.',  emoji: '🏏'),
-  YogaService(id: '34', name: 'Football',                  description: 'Develop teamwork, stamina, ball control.',  emoji: '⚽'),
-  YogaService(id: '35', name: 'Karate',                    description: 'Discipline, flexibility, self-defense.',    emoji: '🥋'),
-  YogaService(id: '36', name: 'Kids Sports Training',      description: 'Fun sports activities for kids.',           emoji: '🧒'),
-  YogaService(id: '37', name: 'Running / Marathon',        description: 'Programs for endurance and marathon prep.', emoji: '🏃‍♂️'),
-  YogaService(id: '38', name: 'Skating',                   description: 'Balance, coordination, and skating techniques.', emoji: '🛼'),
-  YogaService(id: '39', name: 'Swimming',                  description: 'Professional swimming sessions.',           emoji: '🏊'),
-  YogaService(id: '40', name: 'Diabetic Diet',             description: 'Balanced meal plans to manage blood sugar.',emoji: '🩺'),
-  YogaService(id: '41', name: 'Kids Diet',                 description: 'Nutritious diet plans for growing kids.',   emoji: '🧒'),
-  YogaService(id: '42', name: 'Muscle Gain Diet',          description: 'High-protein plans for muscle growth.',     emoji: '💪'),
-  YogaService(id: '43', name: 'Online Diet Consultation',  description: 'Expert nutrition guidance online.',         emoji: '💻'),
-  YogaService(id: '44', name: 'PCOS Diet',                 description: 'Hormone-friendly meal plans for PCOS.',    emoji: '🌸'),
-  YogaService(id: '45', name: 'Sports Nutrition',          description: 'Performance nutrition for athletes.',       emoji: '🏋️'),
-  YogaService(id: '46', name: 'Weight Loss Diet',          description: 'Safe and sustainable weight loss diet.',    emoji: '⚖️'),
+  // ── YOGA ──
+  YogaService(id: '0',  name: 'Meditation',                description: 'Mindfulness & breathing techniques',           emoji: '🧘', category: ServiceCategory.yoga),
+  YogaService(id: '1',  name: 'Online Yoga',               description: 'Live sessions from home',                      emoji: '🖥️', category: ServiceCategory.yoga),
+  YogaService(id: '2',  name: 'Power Yoga',                description: 'High-energy strength & flexibility',           emoji: '💪', category: ServiceCategory.yoga),
+  YogaService(id: '3',  name: 'Pre / Post Pregnancy Yoga', description: 'Safe yoga for all stages',                     emoji: '🤰', category: ServiceCategory.yoga),
+  YogaService(id: '4',  name: 'Stress Relief',             description: 'Calming asanas & relaxation',                  emoji: '🌿', category: ServiceCategory.yoga),
+  YogaService(id: '5',  name: 'Therapeutic Yoga',          description: 'Healing & rehabilitation focused',             emoji: '🩺', category: ServiceCategory.yoga),
+  YogaService(id: '6',  name: 'Yoga at Home',              description: 'Personalised in-home sessions',                emoji: '🏠', category: ServiceCategory.yoga),
+  // ── FITNESS ──
+  YogaService(id: '7',  name: 'Strength Training',         description: 'Build muscle & power with expert guidance',    emoji: '🏋️', category: ServiceCategory.fitness),
+  YogaService(id: '8',  name: 'Weight Loss',               description: 'Fat-loss programs tailored to your body',      emoji: '⚖️', category: ServiceCategory.fitness),
+  YogaService(id: '9',  name: 'Body Toning',               description: 'Sculpt & tone with targeted exercises',        emoji: '🎯', category: ServiceCategory.fitness),
+  YogaService(id: '10', name: 'Kids Fitness',              description: 'Fun, age-appropriate fitness programs',        emoji: '🧒', category: ServiceCategory.fitness),
+  YogaService(id: '11', name: 'Posture Correction',        description: 'Correct imbalances & improve alignment',       emoji: '🧍', category: ServiceCategory.fitness),
+  YogaService(id: '12', name: 'Senior Fitness',            description: 'Gentle fitness for older adults',              emoji: '🧓', category: ServiceCategory.fitness),
+  YogaService(id: '13', name: 'Muscle Gain',               description: 'Structured hypertrophy programs',              emoji: '💪', category: ServiceCategory.fitness),
+  YogaService(id: '14', name: 'Personal Trainer',          description: 'One-on-one certified trainer sessions',        emoji: '🏅', category: ServiceCategory.fitness),
+  // ── PHYSIO ──
+  YogaService(id: '15', name: 'Back / Neck / Knee Pain',   description: 'Relieve pain and improve movement.',           emoji: '🩻', category: ServiceCategory.physio),
+  YogaService(id: '16', name: 'Elderly Care',              description: 'Help seniors stay active and independent.',    emoji: '👴', category: ServiceCategory.physio),
+  YogaService(id: '17', name: 'Home Physiotherapy',        description: 'Professional physiotherapy at home.',          emoji: '🏠', category: ServiceCategory.physio),
+  YogaService(id: '18', name: 'Mobility Training',         description: 'Improve balance, flexibility, movement.',      emoji: '🚶', category: ServiceCategory.physio),
+  YogaService(id: '19', name: 'Physiotherapist (Home/Online)', description: 'Expert physiotherapy at home or online.',  emoji: '💻', category: ServiceCategory.physio),
+  YogaService(id: '20', name: 'Post Surgery Recovery',     description: 'Regain strength after surgery safely.',        emoji: '🏥', category: ServiceCategory.physio),
+  YogaService(id: '21', name: 'Posture Correction (Physio)', description: 'Correct body posture with expert guidance.', emoji: '🧍', category: ServiceCategory.physio),
+  YogaService(id: '22', name: 'Sports Injury Rehab',       description: 'Recover from sports injuries faster.',         emoji: '⚽', category: ServiceCategory.physio),
+  YogaService(id: '23', name: 'Stroke Rehab',              description: 'Specialized rehabilitation after stroke.',     emoji: '🧠', category: ServiceCategory.physio),
+  // ── THERAPY ──
+  YogaService(id: '24', name: 'Acupressure',               description: 'Stimulate pressure points to reduce pain.',   emoji: '🖐️', category: ServiceCategory.therapy),
+  YogaService(id: '25', name: 'Acupuncture',               description: 'Traditional needle therapy for pain relief.', emoji: '🪡', category: ServiceCategory.therapy),
+  YogaService(id: '26', name: 'Cupping Therapy',           description: 'Improve blood flow and reduce muscle tension.',emoji: '🥣', category: ServiceCategory.therapy),
+  YogaService(id: '27', name: 'Detox Therapy',             description: 'Cleanse your body with natural detox therapies.', emoji: '🌿', category: ServiceCategory.therapy),
+  YogaService(id: '28', name: 'Naturopathy',               description: 'Natural healing focused on overall wellness.', emoji: '🍃', category: ServiceCategory.therapy),
+  YogaService(id: '29', name: 'Touch Healing',             description: 'Gentle healing for relaxation and balance.',   emoji: '✨', category: ServiceCategory.therapy),
+  // ── SPORTS ──
+  YogaService(id: '30', name: 'Athletics',                 description: 'Improve speed, stamina, agility.',             emoji: '🏃', category: ServiceCategory.sports),
+  YogaService(id: '31', name: 'Badminton',                 description: 'Enhance reflexes, footwork, and strategy.',   emoji: '🏸', category: ServiceCategory.sports),
+  YogaService(id: '32', name: 'Boxing / Kickboxing',       description: 'Build strength and self-defense skills.',      emoji: '🥊', category: ServiceCategory.sports),
+  YogaService(id: '33', name: 'Cricket',                   description: 'Coaching for batting, bowling, fielding.',     emoji: '🏏', category: ServiceCategory.sports),
+  YogaService(id: '34', name: 'Football',                  description: 'Develop teamwork, stamina, ball control.',     emoji: '⚽', category: ServiceCategory.sports),
+  YogaService(id: '35', name: 'Karate',                    description: 'Discipline, flexibility, self-defense.',       emoji: '🥋', category: ServiceCategory.sports),
+  YogaService(id: '36', name: 'Kids Sports Training',      description: 'Fun sports activities for kids.',              emoji: '🧒', category: ServiceCategory.sports),
+  YogaService(id: '37', name: 'Running / Marathon',        description: 'Programs for endurance and marathon prep.',    emoji: '🏃‍♂️', category: ServiceCategory.sports),
+  YogaService(id: '38', name: 'Skating',                   description: 'Balance, coordination, and skating techniques.', emoji: '🛼', category: ServiceCategory.sports),
+  YogaService(id: '39', name: 'Swimming',                  description: 'Professional swimming sessions.',              emoji: '🏊', category: ServiceCategory.sports),
+  // ── NUTRITION ──
+  YogaService(id: '40', name: 'Diabetic Diet',             description: 'Balanced meal plans to manage blood sugar.',   emoji: '🩺', category: ServiceCategory.nutrition),
+  YogaService(id: '41', name: 'Kids Diet',                 description: 'Nutritious diet plans for growing kids.',      emoji: '🧒', category: ServiceCategory.nutrition),
+  YogaService(id: '42', name: 'Muscle Gain Diet',          description: 'High-protein plans for muscle growth.',        emoji: '💪', category: ServiceCategory.nutrition),
+  YogaService(id: '43', name: 'Online Diet Consultation',  description: 'Expert nutrition guidance online.',            emoji: '💻', category: ServiceCategory.nutrition),
+  YogaService(id: '44', name: 'PCOS Diet',                 description: 'Hormone-friendly meal plans for PCOS.',        emoji: '🌸', category: ServiceCategory.nutrition),
+  YogaService(id: '45', name: 'Sports Nutrition',          description: 'Performance nutrition for athletes.',          emoji: '🏋️', category: ServiceCategory.nutrition),
+  YogaService(id: '46', name: 'Weight Loss Diet',          description: 'Safe and sustainable weight loss diet.',       emoji: '⚖️', category: ServiceCategory.nutrition),
 ];
+
+// Helper: map ServiceFilterCategory → ServiceCategory (booking_store enum)
+ServiceFilterCategory? _inferFilterCategory(String? serviceName) {
+  if (serviceName == null) return null;
+  final lower = serviceName.toLowerCase().trim();
+  for (final s in kYogaServices) {
+    if (s.name.toLowerCase().trim() == lower) {
+      switch (s.category) {
+        case ServiceCategory.yoga:      return ServiceFilterCategory.yoga;
+        case ServiceCategory.fitness:   return ServiceFilterCategory.fitness;
+        case ServiceCategory.physio:    return ServiceFilterCategory.physio;
+        case ServiceCategory.sports:    return ServiceFilterCategory.sports;
+        case ServiceCategory.therapy:   return ServiceFilterCategory.therapy;
+        case ServiceCategory.nutrition: return ServiceFilterCategory.nutrition;
+        default:                        return null;
+      }
+    }
+  }
+  return null;
+}
+
+List<YogaService> _filteredServices(ServiceFilterCategory? cat) {
+  if (cat == null) return kYogaServices;
+  switch (cat) {
+    case ServiceFilterCategory.fitness:
+      return kYogaServices.where((s) => s.category == ServiceCategory.fitness).toList();
+    case ServiceFilterCategory.yoga:
+      return kYogaServices.where((s) => s.category == ServiceCategory.yoga).toList();
+    case ServiceFilterCategory.physio:
+      return kYogaServices.where((s) => s.category == ServiceCategory.physio).toList();
+    case ServiceFilterCategory.sports:
+      return kYogaServices.where((s) => s.category == ServiceCategory.sports).toList();
+    case ServiceFilterCategory.therapy:
+      return kYogaServices.where((s) => s.category == ServiceCategory.therapy).toList();
+    case ServiceFilterCategory.nutrition:
+      return kYogaServices.where((s) => s.category == ServiceCategory.nutrition).toList();
+  }
+}
 
 const List<String> kYogaTimeSlots = [
-  '6:00 AM', '7:00 AM', '8:00 AM', '9:00 AM', '10:00 AM',
-  '11:00 AM', '4:00 PM', '5:00 PM', '6:00 PM', '7:00 PM',
+  '12:00 AM', '1:00 AM', '2:00 AM', '3:00 AM', '4:00 AM', '5:00 AM', '6:00 AM',
+  '7:00 AM', '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM',
+  '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM',
+  '7:00 PM', '8:00 PM', '9:00 PM', '10:00 PM', '11:00 PM',
 ];
-const Color kPrimary      =kYellow;
-const Color kPrimaryDark  =kYellow;
+
+const Color kPrimary      =Color(0xFFFFD800);
+const Color kPrimaryDark  = Color(0xFFFFC107);
 const Color kPrimaryLight = Color(0xFFE8F5E9);
 const Color kPrimaryBg    = Color(0xFFF1F8F1);
-const Color kAccent       = kYellow;
+const Color kAccent       = Color(0xFFFFC107);
 const Color kTextDark     = Color(0xFF1A2E1A);
-const Color kTextMid      =kYellow;
-const Color kTextLight    = kYellow;
+const Color kTextMid      = Color(0xFFFFC107);
+const Color kTextLight    = Color(0xFFFFC107);
 const Color kBorderColor  = Color.fromARGB(255, 230, 227, 200);
 const Color kCardSelected = Color(0xFFE8F5E9);
 
+// ─── Main Screen ─────────────────────────────────────────────────
 class YogaServiceScreen extends StatefulWidget {
   final String? preSelectedServiceName;
+  final String? preSelectedCategory;
   final String? categoryName;
-  const YogaServiceScreen({super.key, this.preSelectedServiceName, this.categoryName});
+
+  /// If set to 'demo' or 'enquiry', the confirm sheet for that booking type
+  /// opens automatically as soon as the screen loads (skipping the manual
+  /// "tap a service in the list" step) — used when arriving here from a
+  /// "Book Demo" / "Enquire" button elsewhere with a service already chosen.
+  final String? autoBookingType;
+
+  const YogaServiceScreen({
+    super.key,
+    this.preSelectedServiceName,
+    this.preSelectedCategory,
+    this.categoryName,
+    this.autoBookingType,
+  });
 
   @override
   State<YogaServiceScreen> createState() => _YogaServiceScreenState();
@@ -101,44 +197,65 @@ class YogaServiceScreen extends StatefulWidget {
 
 class _YogaServiceScreenState extends State<YogaServiceScreen>
     with SingleTickerProviderStateMixin {
-  final Set<String> _selected = {};
+  final Map<String, int> _selectedQty = {};
+  List<dynamic> _allSlots = [];
+  bool _loadingSlots = true;
+  late Razorpay _razorpay;
+  Map<String, dynamic>? _pendingBookingData;
 
   String _serviceMode = 'online';
   DateTime _selectedDate = DateTime.now().add(const Duration(days: 1));
   String _selectedTime = kYogaTimeSlots[0];
 
-  List<dynamic> _allSlots = [];
-  bool _loadingSlots = true;
-
   late TabController _tabController;
-  late Razorpay _razorpay;
-  Map<String, dynamic>? _pendingBookingData;
-
   final List<Booking> _sessionBookings = [];
+
+  // Active category filter
+  ServiceFilterCategory? _activeCategory;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    
     if (!kIsWeb) {
       _razorpay = Razorpay();
       _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
       _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
       _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
     }
+    _fetchSlots();
 
+    // Determine active category from preSelectedCategory/categoryName string OR infer from service name
+    final initialCat = widget.preSelectedCategory ?? widget.categoryName;
+    if (initialCat != null) {
+      final cat = initialCat.toLowerCase().trim();
+      _activeCategory = ServiceFilterCategory.values.firstWhere(
+        (c) => c.name == cat,
+        orElse: () => ServiceFilterCategory.yoga,
+      );
+    } else if (widget.preSelectedServiceName != null) {
+      _activeCategory = _inferFilterCategory(widget.preSelectedServiceName);
+    }
+
+    // Pre-select service if name provided
     if (widget.preSelectedServiceName != null) {
       final incomingName = widget.preSelectedServiceName!.toLowerCase().trim();
       for (final service in kYogaServices) {
         if (service.name.toLowerCase().trim() == incomingName) {
-          _selected.add(service.id);
+          _selectedQty[service.id] = 1;
           break;
         }
       }
     }
 
-    _fetchSlots();
+    // Auto-open the confirm sheet (Demo or Enquiry) right away if requested
+    // and a service is already selected — skips the "tap from list" step.
+    if (widget.autoBookingType != null && _selectedQty.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _openConfirmSheet(bookingType: widget.autoBookingType!);
+      });
+    }
   }
 
   Future<void> _fetchSlots() async {
@@ -187,7 +304,34 @@ class _YogaServiceScreenState extends State<YogaServiceScreen>
 
   void _toggle(String id) {
     setState(() {
-      _selected.contains(id) ? _selected.remove(id) : _selected.add(id);
+      if (_selectedQty.containsKey(id)) {
+        _selectedQty.remove(id);
+      } else {
+        _selectedQty[id] = 1;
+      }
+    });
+  }
+
+  void _increment(String id) {
+    setState(() {
+      _selectedQty[id] = (_selectedQty[id] ?? 0) + 1;
+    });
+  }
+
+  void _decrement(String id) {
+    setState(() {
+      final current = _selectedQty[id] ?? 0;
+      if (current <= 1) {
+        _selectedQty.remove(id);
+      } else {
+        _selectedQty[id] = current - 1;
+      }
+    });
+  }
+
+  void _remove(String id) {
+    setState(() {
+      _selectedQty.remove(id);
     });
   }
 
@@ -220,7 +364,8 @@ class _YogaServiceScreenState extends State<YogaServiceScreen>
 
   void _openConfirmSheet({required String bookingType}) {
     final selectedServices =
-        kYogaServices.where((s) => _selected.contains(s.id)).toList();
+        kYogaServices.where((s) => _selectedQty.containsKey(s.id)).toList();
+    final totalQty = _selectedQty.values.fold<int>(0, (a, b) => a + b);
 
     showModalBottomSheet(
       context: context,
@@ -228,10 +373,12 @@ class _YogaServiceScreenState extends State<YogaServiceScreen>
       isScrollControlled: true,
       builder: (_) => _ConfirmSheet(
         services: selectedServices,
+        serviceQty: _selectedQty,
         serviceMode: _serviceMode,
         sessionDate: _selectedDate,
         sessionTime: _selectedTime,
         bookingType: bookingType,
+        initialSessionCount: totalQty,
         onConfirm: (Map<String, dynamic> data) {
           Navigator.pop(context);
           _processBookingSubmit(selectedServices, bookingType, data);
@@ -332,11 +479,10 @@ class _YogaServiceScreenState extends State<YogaServiceScreen>
     final discount = (data['discountAmount'] as num?)?.toDouble() ?? 0.0;
     final appliedVoucherCode = data['appliedVoucherCode'] as String?;
 
-    final primaryService = services.first;
-    
-    final serviceNameString = services.length > 1
-        ? '${primaryService.name} +${services.length - 1} more'
-        : primaryService.name;
+    final serviceNameString = services.map((s) {
+      final qty = _selectedQty[s.id] ?? 1;
+      return qty > 1 ? '${s.name} (x$qty)' : s.name;
+    }).join(', ');
 
     final subcategoriesList = services.map((s) => s.name).toList();
 
@@ -462,7 +608,8 @@ class _YogaServiceScreenState extends State<YogaServiceScreen>
       rewardCard = GlobalScratchCard.fromJson(result['reward']);
       ScratchCardStore().addCard(rewardCard);
     }
-
+    
+    final primaryService = services.first;
     final globalBooking = Booking(
       bookingId: 'YG${DateTime.now().millisecondsSinceEpoch}',
       serviceCategory: localCategory,
@@ -493,7 +640,7 @@ class _YogaServiceScreenState extends State<YogaServiceScreen>
 
     setState(() {
       _sessionBookings.add(globalBooking);
-      _selected.clear();
+      _selectedQty.clear();
       _tabController.animateTo(1);
     });
 
@@ -527,7 +674,6 @@ class _YogaServiceScreenState extends State<YogaServiceScreen>
       ),
     );
   }
-
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -549,144 +695,43 @@ class _YogaServiceScreenState extends State<YogaServiceScreen>
       },
     );
     if (picked != null) {
-      setState(() {
-        _selectedDate = picked;
-      });
+      setState(() => _selectedDate = picked);
       _updateSelectedTimeForDate();
     }
-  }
-
-  String? _getCategoryFromCMS(String serviceName) {
-    if (ApiService.cachedServices != null) {
-      for (var s in ApiService.cachedServices!) {
-        if (s is Map &&
-            s['title'] != null &&
-            s['title'].toString().toLowerCase().trim() ==
-                serviceName.toLowerCase().trim()) {
-          return s['category']?.toString();
-        }
-      }
-    }
-    return null;
-  }
-
-  bool _shouldShowService(YogaService service) {
-    if (widget.categoryName == null) return true;
-
-    final selectedCat = widget.categoryName!.toLowerCase().trim();
-
-    // 1. Try to find the category from CMS mappings (ApiService.cachedServices)
-    final cmsCategory = _getCategoryFromCMS(service.name);
-    if (cmsCategory != null) {
-      final cmsCatLower = cmsCategory.toLowerCase().trim();
-      if (cmsCatLower == selectedCat) return true;
-      if (selectedCat.contains('fitness') && cmsCatLower.contains('fitness')) return true;
-      if (selectedCat.contains('physio') && cmsCatLower.contains('physio')) return true;
-      if ((selectedCat.contains('yoga') || selectedCat.contains('wellness')) &&
-          (cmsCatLower.contains('yoga') || cmsCatLower.contains('wellness'))) return true;
-      if (selectedCat.contains('sport') && cmsCatLower.contains('sport')) return true;
-      if ((selectedCat.contains('diet') || selectedCat.contains('nutrition')) &&
-          (cmsCatLower.contains('diet') || cmsCatLower.contains('nutrition'))) return true;
-      if (cmsCatLower.contains(selectedCat) || selectedCat.contains(cmsCatLower)) return true;
-      
-      return false;
-    }
-
-    // 2. Try to derive from existing category-service relationships (using names/IDs)
-    final lowerName = service.name.toLowerCase();
-    if (selectedCat.contains('diet') || selectedCat.contains('nutrition')) {
-      final ids = ['40', '41', '42', '43', '44', '45', '46'];
-      return ids.contains(service.id) ||
-          lowerName.contains('diet') ||
-          lowerName.contains('nutrition');
-    } else if (selectedCat.contains('fitness')) {
-      final ids = ['7', '8', '9', '10', '11', '12', '13', '14'];
-      return ids.contains(service.id) ||
-          lowerName.contains('fitness') ||
-          lowerName.contains('gym') ||
-          lowerName.contains('strength') ||
-          lowerName.contains('body') ||
-          lowerName.contains('weight') ||
-          lowerName.contains('kids fitness') ||
-          lowerName.contains('senior') ||
-          lowerName.contains('muscle') ||
-          lowerName.contains('trainer') ||
-          lowerName.contains('toning') ||
-          lowerName.contains('functional');
-    } else if (selectedCat.contains('physio')) {
-      final ids = ['15', '16', '17', '18', '19', '20', '21', '22', '23'];
-      return ids.contains(service.id) ||
-          lowerName.contains('physio') ||
-          lowerName.contains('surgery') ||
-          lowerName.contains('rehab') ||
-          lowerName.contains('pain') ||
-          lowerName.contains('mobility') ||
-          lowerName.contains('elderly') ||
-          lowerName.contains('recovery') ||
-          lowerName.contains('care');
-    } else if (selectedCat.contains('yoga') || selectedCat.contains('wellness')) {
-      final ids = ['0', '1', '2', '3', '4', '5', '6'];
-      return ids.contains(service.id) ||
-          lowerName.contains('yoga') ||
-          lowerName.contains('stress') ||
-          lowerName.contains('pregnancy') ||
-          lowerName.contains('meditation') ||
-          lowerName.contains('breath') ||
-          lowerName.contains('relaxation');
-    } else if (selectedCat.contains('sport')) {
-      final ids = ['30', '31', '32', '33', '34', '35', '36', '37', '38', '39'];
-      return ids.contains(service.id) ||
-          lowerName.contains('sport') ||
-          lowerName.contains('athletics') ||
-          lowerName.contains('badminton') ||
-          lowerName.contains('boxing') ||
-          lowerName.contains('kickboxing') ||
-          lowerName.contains('cricket') ||
-          lowerName.contains('football') ||
-          lowerName.contains('karate') ||
-          lowerName.contains('skating') ||
-          lowerName.contains('swimming') ||
-          lowerName.contains('running') ||
-          lowerName.contains('marathon');
-    } else if (selectedCat.contains('therapy')) {
-      final ids = ['24', '25', '26', '27', '28', '29'];
-      return ids.contains(service.id) ||
-          lowerName.contains('therapy') ||
-          lowerName.contains('acupressure') ||
-          lowerName.contains('acupuncture') ||
-          lowerName.contains('naturopathy') ||
-          lowerName.contains('healing');
-    }
-
-    return true;
   }
 
   @override
   Widget build(BuildContext context) {
     final selectedServices =
-        kYogaServices.where((s) => _selected.contains(s.id)).toList();
-
-    final filteredServices = kYogaServices.where((s) {
-      if (widget.preSelectedServiceName != null &&
-          s.name.toLowerCase().trim() == widget.preSelectedServiceName!.toLowerCase().trim()) {
-        return true;
-      }
-      return _shouldShowService(s);
-    }).toList();
+        kYogaServices.where((s) => _selectedQty.containsKey(s.id)).toList();
 
     return Scaffold(
       backgroundColor: kPrimaryBg,
       body: Column(
         children: [
-          _Header(
-            preSelectedName: widget.preSelectedServiceName,
-            categoryName: widget.categoryName,
+          // ── Top Bar with back button ──
+          _TopBar(activeCategory: _activeCategory),
+
+          // ── Category Filter Chips ──
+          _CategoryFilterBar(
+            activeCategory: _activeCategory,
+            onCategoryChanged: (cat) {
+              setState(() {
+                _activeCategory = cat;
+                // Clear selections that don't belong to new category
+                if (cat != null) {
+                  final visibleIds = _filteredServices(cat).map((s) => s.id).toSet();
+                  _selectedQty.removeWhere((id, _) => !visibleIds.contains(id));
+                }
+              });
+            },
           ),
 
           if (selectedServices.isNotEmpty)
             _SelectedServicesBar(
               services: selectedServices,
-              onRemove: (id) => _toggle(id),
+              qtyOf: (id) => _selectedQty[id] ?? 1,
+              onRemove: (id) => _remove(id),
             ),
 
           Container(
@@ -738,8 +783,10 @@ class _YogaServiceScreenState extends State<YogaServiceScreen>
               controller: _tabController,
               children: [
                 _ServicesTab(
-                  selected: _selected,
+                  selectedQty: _selectedQty,
                   onToggle: _toggle,
+                  onIncrement: _increment,
+                  onDecrement: _decrement,
                   serviceMode: _serviceMode,
                   onModeChanged: (m) => setState(() => _serviceMode = m),
                   selectedDate: _selectedDate,
@@ -747,8 +794,8 @@ class _YogaServiceScreenState extends State<YogaServiceScreen>
                   onPickDate: _pickDate,
                   onTimeChanged: (t) => setState(() => _selectedTime = t),
                   preSelectedServiceName: widget.preSelectedServiceName,
+                  activeCategory: _activeCategory,
                   availableTimeSlots: _availableTimeSlotsForSelectedDate,
-                  filteredServices: filteredServices,
                 ),
                 _MyBookingsTab(bookings: _sessionBookings),
               ],
@@ -756,7 +803,7 @@ class _YogaServiceScreenState extends State<YogaServiceScreen>
           ),
 
           _BottomBar(
-            enabled: _selected.isNotEmpty,
+            enabled: _selectedQty.isNotEmpty,
             bookingCount: _sessionBookings.length,
             onBookDemo: () => _openConfirmSheet(bookingType: 'demo'),
             onEnquire: () => _openConfirmSheet(bookingType: 'enquiry'),
@@ -767,11 +814,178 @@ class _YogaServiceScreenState extends State<YogaServiceScreen>
   }
 }
 
+// ─── Top Bar with Back Button ────────────────────────────────────
+class _TopBar extends StatelessWidget {
+  final ServiceFilterCategory? activeCategory;
+  const _TopBar({this.activeCategory});
+
+  @override
+  Widget build(BuildContext context) {
+    final topPad = MediaQuery.of(context).padding.top;
+    final title = activeCategory != null
+        ? '${activeCategory!.emoji}  ${activeCategory!.label}'
+        : '✨  Services';
+
+    return Container(
+      width: double.infinity,
+      color: Colors.white,
+      padding: EdgeInsets.fromLTRB(8, topPad + 8, 16, 10),
+      child: Row(
+        children: [
+          // Back button
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              width: 38,
+              height: 38,
+              margin: const EdgeInsets.only(right: 8),
+              decoration: BoxDecoration(
+                color: kPrimaryLight,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: kBorderColor),
+              ),
+              alignment: Alignment.center,
+              child: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: kYellow,
+                size: 16,
+              ),
+            ),
+          ),
+          // Title
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: kTextDark,
+              ),
+            ),
+          ),
+          // Price badges
+          
+          
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Category Filter Bar ─────────────────────────────────────────
+class _CategoryFilterBar extends StatelessWidget {
+  final ServiceFilterCategory? activeCategory;
+  final void Function(ServiceFilterCategory?) onCategoryChanged;
+
+  const _CategoryFilterBar({
+    required this.activeCategory,
+    required this.onCategoryChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+     // color: Colors.white,
+      //padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      // child: SizedBox(
+      //   height: 40,
+      //   child: ListView(
+      //     scrollDirection: Axis.horizontal,
+      //     children: [
+            // "All" chip
+            // _CategoryChip(
+            //   label: 'All',
+            //   emoji: '🔎',
+            //   isActive: activeCategory == null,
+            //   onTap: () => onCategoryChanged(null),
+            // ),
+            // const SizedBox(width: 8),
+            // ...ServiceFilterCategory.values.map((cat) => Padding(
+            //       padding: const EdgeInsets.only(right: 8),
+            //       child: _CategoryChip(
+            //         label: cat.label,
+            //         emoji: cat.emoji,
+            //         isActive: activeCategory == cat,
+            //         onTap: () => onCategoryChanged(
+            //             activeCategory == cat ? null : cat),
+            //       ),
+               // )
+              //  ),
+      //     ],
+      //   ),
+      // ),
+    );
+  }
+}
+
+class _CategoryChip extends StatelessWidget {
+  final String label;
+  final String emoji;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _CategoryChip({
+    required this.label,
+    required this.emoji,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isActive ? kYellow : const Color(0xFFF5F5F5),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isActive ? kYellow : kBorderColor,
+            width: isActive ? 1.5 : 1,
+          ),
+          boxShadow: isActive
+              ? [
+                  BoxShadow(
+                    color: kYellow.withOpacity(0.30),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  )
+                ]
+              : [],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 13)),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: isActive ? Colors.white : const Color(0xFF555555),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Selected Services Bar ────────────────────────────────────────
 class _SelectedServicesBar extends StatelessWidget {
   final List<YogaService> services;
+  final int Function(String id) qtyOf;
   final void Function(String id) onRemove;
 
-  const _SelectedServicesBar({required this.services, required this.onRemove});
+  const _SelectedServicesBar({
+    required this.services,
+    required this.qtyOf,
+    required this.onRemove,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -807,6 +1021,7 @@ class _SelectedServicesBar extends StatelessWidget {
               separatorBuilder: (_, __) => const SizedBox(width: 6),
               itemBuilder: (context, i) {
                 final s = services[i];
+                final qty = qtyOf(s.id);
                 return Container(
                   decoration: BoxDecoration(
                     color: kYellow,
@@ -831,9 +1046,28 @@ class _SelectedServicesBar extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
-                          color: Colors.black,
+                          color: Color.fromARGB(255, 0, 0, 0),
                         ),
                       ),
+                      if (qty > 1) ...[
+                        const SizedBox(width: 5),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 5, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.55),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '×$qty',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: Color.fromARGB(255, 0, 0, 0),
+                            ),
+                          ),
+                        ),
+                      ],
                       const SizedBox(width: 5),
                       GestureDetector(
                         onTap: () => onRemove(s.id),
@@ -846,7 +1080,7 @@ class _SelectedServicesBar extends StatelessWidget {
                           ),
                           alignment: Alignment.center,
                           child: const Icon(Icons.close_rounded,
-                              size: 10, color: Colors.black),
+                              size: 10, color: Colors.white),
                         ),
                       ),
                     ],
@@ -860,69 +1094,14 @@ class _SelectedServicesBar extends StatelessWidget {
     );
   }
 }
-class _Header extends StatelessWidget {
-  final String? preSelectedName;
-  final String? categoryName;
-  const _Header({this.preSelectedName, this.categoryName});
 
-  String _getCategoryEmoji(String? categoryName) {
-    if (categoryName == null) return '🧘';
-    final cat = categoryName.toLowerCase();
-    if (cat.contains('fitness')) return '🏋️';
-    if (cat.contains('physio')) return '🩺';
-    if (cat.contains('yoga') || cat.contains('wellness')) return '🧘';
-    if (cat.contains('sport')) return '⚽';
-    if (cat.contains('diet') || cat.contains('nutrition')) return '🥗';
-    if (cat.contains('therapy')) return '💆';
-    return '📋';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      color: Colors.white,
-      padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 12,
-        left: 16,
-        right: 16,
-        bottom: 12,
-      ),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: const Color(0xFFE8F5E9),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(
-                Icons.arrow_back_ios_new_rounded,
-                color: Color(0xFF2E7D32),
-                size: 15,
-              ),
-            ),
-          ),
-          const SizedBox(width: 14),
-          Text(
-            '${_getCategoryEmoji(categoryName)} ${categoryName ?? "Yoga & Wellness"}',
-            style: const TextStyle(
-              color: Color(0xFF1A2E1A),
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+// ─── Services Tab ─────────────────────────────────────────────────
+// ─── Services Tab ─────────────────────────────────────────────────
 class _ServicesTab extends StatelessWidget {
-  final Set<String> selected;
+  final Map<String, int> selectedQty;
   final void Function(String) onToggle;
+  final void Function(String) onIncrement;
+  final void Function(String) onDecrement;
   final String serviceMode;
   final void Function(String) onModeChanged;
   final DateTime selectedDate;
@@ -930,12 +1109,14 @@ class _ServicesTab extends StatelessWidget {
   final VoidCallback onPickDate;
   final void Function(String) onTimeChanged;
   final String? preSelectedServiceName;
+  final ServiceFilterCategory? activeCategory;
   final List<String> availableTimeSlots;
-  final List<YogaService> filteredServices;
 
   const _ServicesTab({
-    required this.selected,
+    required this.selectedQty,
     required this.onToggle,
+    required this.onIncrement,
+    required this.onDecrement,
     required this.serviceMode,
     required this.onModeChanged,
     required this.selectedDate,
@@ -943,8 +1124,8 @@ class _ServicesTab extends StatelessWidget {
     required this.onPickDate,
     required this.onTimeChanged,
     required this.availableTimeSlots,
-    required this.filteredServices,
     this.preSelectedServiceName,
+    this.activeCategory,
   });
 
   String _formatDate(DateTime d) {
@@ -955,13 +1136,15 @@ class _ServicesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final visibleServices = _filteredServices(activeCategory);
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
       children: [
+        // Pre-selected info banner
         if (preSelectedServiceName != null) ...[
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             margin: const EdgeInsets.only(bottom: 16),
             decoration: BoxDecoration(
               color: const Color(0xFF2E7D32).withOpacity(0.08),
@@ -972,7 +1155,7 @@ class _ServicesTab extends StatelessWidget {
             child: Row(
               children: [
                 const Icon(Icons.info_outline_rounded,
-                     size: 16, color: Color(0xFF2E7D32)),
+                    size: 16, color: Color(0xFF2E7D32)),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -990,9 +1173,33 @@ class _ServicesTab extends StatelessWidget {
             ),
           ),
         ],
-        _ServiceModeSection(
-          serviceMode: serviceMode,
-          onModeChanged: onModeChanged,
+
+        _SectionLabel(label: 'SERVICE MODE'),
+        const SizedBox(height: 10),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: kBorderColor),
+          ),
+          padding: const EdgeInsets.all(5),
+          child: Row(
+            children: [
+              _ModeToggle(
+                label: '🖥️  Online',
+                subLabel: 'Live virtual session',
+                selected: serviceMode == 'online',
+                onTap: () => onModeChanged('online'),
+              ),
+              const SizedBox(width: 5),
+              _ModeToggle(
+                label: '🏠  Home Visit',
+                subLabel: 'Trainer comes to you',
+                selected: serviceMode == 'home',
+                onTap: () => onModeChanged('home'),
+              ),
+            ],
+          ),
         ),
 
         const SizedBox(height: 20),
@@ -1003,8 +1210,7 @@ class _ServicesTab extends StatelessWidget {
         GestureDetector(
           onTap: onPickDate,
           child: Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
               color: Colors.white,
               border: Border.all(color: kBorderColor),
@@ -1029,8 +1235,7 @@ class _ServicesTab extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text('Session Date',
-                          style:
-                              TextStyle(fontSize: 11, color:kYellow)),
+                          style: TextStyle(fontSize: 11, color: kYellow)),
                       const SizedBox(height: 2),
                       Text(
                         _formatDate(selectedDate),
@@ -1078,7 +1283,7 @@ class _ServicesTab extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: isSelected ? Colors.white : Colors.black,
+                      color: isSelected ? const Color.fromARGB(255, 4, 3, 3) : Colors.black,
                     ),
                   ),
                 ),
@@ -1086,24 +1291,31 @@ class _ServicesTab extends StatelessWidget {
             },
           ),
         ),
+
         const SizedBox(height: 22),
+
+        // Section label with count
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const _SectionLabel(label: 'AVAILABLE SERVICES'),
+            _SectionLabel(
+              label: activeCategory != null
+                  ? '${activeCategory!.label.toUpperCase()} SERVICES'
+                  : 'AVAILABLE SERVICES',
+            ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: const Color(0xFFE8F5E9),
+                color: kPrimaryLight,
                 borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: kBorderColor),
               ),
               child: Text(
-                '${filteredServices.length} services',
+                '${visibleServices.length} services',
                 style: const TextStyle(
-                  color: Color(0xFF2E7D32),
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                ),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: kTextDark),
               ),
             ),
           ],
@@ -1113,28 +1325,30 @@ class _ServicesTab extends StatelessWidget {
           children: [
             Icon(Icons.touch_app_rounded, size: 13, color: kYellow),
             SizedBox(width: 5),
-            Text('Tap to select one or more services',
+            Text('Tap to select, then use +/- to add more of the same service',
                 style: TextStyle(fontSize: 12, color: Colors.black)),
           ],
         ),
         const SizedBox(height: 14),
 
-        ...filteredServices.map((s) => Padding(
+        ...visibleServices.map((s) => Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: _ServiceCard(
                 service: s,
-                isSelected: selected.contains(s.id),
+                qty: selectedQty[s.id] ?? 0,
                 isPreSelected: preSelectedServiceName != null &&
                     s.name.toLowerCase().trim() ==
                         preSelectedServiceName!.toLowerCase().trim(),
                 onTap: () => onToggle(s.id),
+                onIncrement: () => onIncrement(s.id),
+                onDecrement: () => onDecrement(s.id),
               ),
             )),
+
         const SizedBox(height: 14),
-        if (selected.isNotEmpty)
+        if (selectedQty.isNotEmpty)
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               color: const Color.fromARGB(255, 0, 0, 0),
               border: Border.all(color: kBorderColor),
@@ -1143,13 +1357,13 @@ class _ServicesTab extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Services selected',
+                const Text('Total quantity selected',
                     style: TextStyle(
                         fontSize: 13,
                         color: kYellow,
                         fontWeight: FontWeight.w500)),
                 Text(
-                  '${selected.length}',
+                  '${selectedQty.values.fold<int>(0, (a, b) => a + b)}',
                   style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
@@ -1164,6 +1378,8 @@ class _ServicesTab extends StatelessWidget {
     );
   }
 }
+
+// ─── Section Label ────────────────────────────────────────────────
 class _SectionLabel extends StatelessWidget {
   final String label;
   const _SectionLabel({required this.label});
@@ -1180,6 +1396,8 @@ class _SectionLabel extends StatelessWidget {
     );
   }
 }
+
+// ─── Mode Toggle ──────────────────────────────────────────────────
 class _ModeToggle extends StatelessWidget {
   final String label;
   final String subLabel;
@@ -1200,10 +1418,9 @@ class _ModeToggle extends StatelessWidget {
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          padding:
-              const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
           decoration: BoxDecoration(
-            color: selected ?kYellow : Colors.transparent,
+            color: selected ? kYellow : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
           ),
           child: Column(
@@ -1213,7 +1430,7 @@ class _ModeToggle extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
-                  color: selected ? Colors.black :kYellow,
+                  color: selected ? const Color.fromARGB(255, 0, 0, 0) : const Color.fromARGB(255, 0, 0, 0),
                 ),
               ),
               const SizedBox(height: 2),
@@ -1221,9 +1438,7 @@ class _ModeToggle extends StatelessWidget {
                 subLabel,
                 style: TextStyle(
                   fontSize: 10,
-                  color: selected
-                      ? Colors.black.withOpacity(0.8)
-                      :kYellow,
+                  color: selected ? const Color.fromARGB(255, 0, 0, 0).withOpacity(0.8) : const Color.fromARGB(255, 0, 0, 0),
                 ),
               ),
             ],
@@ -1233,6 +1448,8 @@ class _ModeToggle extends StatelessWidget {
     );
   }
 }
+
+// ─── My Bookings Tab ──────────────────────────────────────────────
 class _MyBookingsTab extends StatelessWidget {
   final List<Booking> bookings;
   const _MyBookingsTab({required this.bookings});
@@ -1265,8 +1482,7 @@ class _MyBookingsTab extends StatelessWidget {
             const Text(
               'Book a demo or send an enquiry\nfrom the Services tab!',
               textAlign: TextAlign.center,
-              style:
-                  TextStyle(fontSize: 13, color:kYellow, height: 1.5),
+              style: TextStyle(fontSize: 13, color: kYellow, height: 1.5),
             ),
           ],
         ),
@@ -1288,6 +1504,8 @@ class _MyBookingsTab extends StatelessWidget {
     );
   }
 }
+
+// ─── Booking Card ─────────────────────────────────────────────────
 class _BookingCard extends StatelessWidget {
   final Booking booking;
   final int index;
@@ -1314,7 +1532,7 @@ class _BookingCard extends StatelessWidget {
               ? [const Color(0xFF1565C0), const Color(0xFF42A5F5)]
               : [
                   const Color.fromARGB(255, 125, 121, 46),
-                  const Color(0xFF66BB6A)
+                  const Color(0xFF66BB6A),
                 ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -1332,9 +1550,7 @@ class _BookingCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    isEnquiry
-                        ? 'Enquiry #$index'
-                        : 'Demo Session #$index',
+                    isEnquiry ? 'Enquiry #$index' : 'Demo Session #$index',
                     style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
@@ -1347,8 +1563,8 @@ class _BookingCard extends StatelessWidget {
                 ],
               ),
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.25),
                   borderRadius: BorderRadius.circular(20),
@@ -1364,87 +1580,65 @@ class _BookingCard extends StatelessWidget {
               ),
             ],
           ),
-
           const SizedBox(height: 4),
           Text('ID: ${booking.bookingId}',
-              style: const TextStyle(
-                  fontSize: 11, color: Color(0xFFE8F5E9))),
+              style: const TextStyle(fontSize: 11, color: Color(0xFFE8F5E9))),
 
-          // Customer / Enquirer info
           if (!isEnquiry && (booking.customerName ?? '').isNotEmpty) ...[
             const SizedBox(height: 6),
-            Row(
-              children: [
-                const Icon(Icons.person_rounded,
-                    size: 13, color: Colors.white70),
+            Row(children: [
+              const Icon(Icons.person_rounded, size: 13, color: Colors.white70),
+              const SizedBox(width: 4),
+              Text(booking.customerName!,
+                  style: const TextStyle(fontSize: 12, color: Colors.white70)),
+              if ((booking.customerPhone ?? '').isNotEmpty) ...[
+                const SizedBox(width: 10),
+                const Icon(Icons.phone_rounded, size: 13, color: Colors.white70),
                 const SizedBox(width: 4),
-                Text(booking.customerName!,
-                    style: const TextStyle(
-                        fontSize: 12, color: Colors.white70)),
-                if ((booking.customerPhone ?? '').isNotEmpty) ...[
-                  const SizedBox(width: 10),
-                  const Icon(Icons.phone_rounded,
-                      size: 13, color: Colors.white70),
-                  const SizedBox(width: 4),
-                  Text(booking.customerPhone!,
-                      style: const TextStyle(
-                          fontSize: 12, color: Colors.white70)),
-                ],
+                Text(booking.customerPhone!,
+                    style: const TextStyle(fontSize: 12, color: Colors.white70)),
               ],
-            ),
+            ]),
           ],
 
           if (isEnquiry && (booking.enquirerName ?? '').isNotEmpty) ...[
             const SizedBox(height: 6),
-            Row(
-              children: [
-                const Icon(Icons.person_rounded,
-                    size: 13, color: Colors.white70),
+            Row(children: [
+              const Icon(Icons.person_rounded, size: 13, color: Colors.white70),
+              const SizedBox(width: 4),
+              Text(booking.enquirerName!,
+                  style: const TextStyle(fontSize: 12, color: Colors.white70)),
+              if ((booking.enquirerPhone ?? '').isNotEmpty) ...[
+                const SizedBox(width: 10),
+                const Icon(Icons.phone_rounded, size: 13, color: Colors.white70),
                 const SizedBox(width: 4),
-                Text(booking.enquirerName!,
-                    style: const TextStyle(
-                        fontSize: 12, color: Colors.white70)),
-                if ((booking.enquirerPhone ?? '').isNotEmpty) ...[
-                  const SizedBox(width: 10),
-                  const Icon(Icons.phone_rounded,
-                      size: 13, color: Colors.white70),
-                  const SizedBox(width: 4),
-                  Text(booking.enquirerPhone!,
-                      style: const TextStyle(
-                          fontSize: 12, color: Colors.white70)),
-                ],
+                Text(booking.enquirerPhone!,
+                    style: const TextStyle(fontSize: 12, color: Colors.white70)),
               ],
-            ),
+            ]),
           ],
 
           if (!isEnquiry && (booking.address ?? '').isNotEmpty) ...[
             const SizedBox(height: 4),
-            Row(
-              children: [
-                const Icon(Icons.location_on_rounded,
-                    size: 13, color: Colors.white70),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(booking.address!,
-                      style: const TextStyle(
-                          fontSize: 12, color: Colors.white70),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis),
-                ),
-              ],
-            ),
+            Row(children: [
+              const Icon(Icons.location_on_rounded, size: 13, color: Colors.white70),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(booking.address!,
+                    style: const TextStyle(fontSize: 12, color: Colors.white70),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+              ),
+            ]),
           ],
 
           const SizedBox(height: 12),
-
           Wrap(
             spacing: 8,
             runSpacing: 6,
             children: [
               _InfoChip(
-                icon: isOnline
-                    ? Icons.videocam_rounded
-                    : Icons.home_rounded,
+                icon: isOnline ? Icons.videocam_rounded : Icons.home_rounded,
                 label: isOnline ? 'Online' : 'Home Visit',
               ),
               if (booking.sessionDate != null)
@@ -1506,21 +1700,17 @@ class _BookingCard extends StatelessWidget {
           ),
 
           const SizedBox(height: 10),
-
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Yoga & Wellness',
-                  style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white)),
+              // const Text('Yoga & Wellness',
+              //     style: TextStyle(
+              //         fontSize: 13,
+              //         fontWeight: FontWeight.w600,
+              //         color: Colors.white)),
               Text(
-                isEnquiry
-                    ? 'Enquiry — FREE'
-                    : '₹${booking.totalAmount} — Cash',
-                style: const TextStyle(
-                    fontSize: 12, color: Colors.white70),
+                isEnquiry ? 'Enquiry — FREE' : '₹${booking.totalAmount} — Cash',
+                style: const TextStyle(fontSize: 12, color: Colors.white70),
               ),
             ],
           ),
@@ -1529,6 +1719,8 @@ class _BookingCard extends StatelessWidget {
     );
   }
 }
+
+// ─── Info Chip ────────────────────────────────────────────────────
 class _InfoChip extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -1557,27 +1749,34 @@ class _InfoChip extends StatelessWidget {
     );
   }
 }
+
+// ─── Service Card (now with a quantity "multiply" stepper) ───────
 class _ServiceCard extends StatelessWidget {
   final YogaService service;
-  final bool isSelected;
+  final int qty; // 0 = not selected
   final bool isPreSelected;
   final VoidCallback onTap;
+  final VoidCallback onIncrement;
+  final VoidCallback onDecrement;
 
   const _ServiceCard({
     required this.service,
-    required this.isSelected,
+    required this.qty,
     required this.onTap,
+    required this.onIncrement,
+    required this.onDecrement,
     this.isPreSelected = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final bool isSelected = qty > 0;
+
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
         decoration: BoxDecoration(
           color: isSelected ? kCardSelected : Colors.white,
           border: Border.all(
@@ -1586,11 +1785,7 @@ class _ServiceCard extends StatelessWidget {
                 : isPreSelected
                     ? kYellow.withOpacity(0.5)
                     : const Color(0xFFDEEDE0),
-            width: isSelected
-                ? 1.8
-                : isPreSelected
-                    ? 1.5
-                    : 1,
+            width: isSelected ? 1.8 : isPreSelected ? 1.5 : 1,
           ),
           borderRadius: BorderRadius.circular(14),
         ),
@@ -1601,9 +1796,7 @@ class _ServiceCard extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: isSelected
-                    ? kPrimaryLight
-                    : const Color(0xFFF0F7F0),
+                color: isSelected ? kPrimaryLight : const Color(0xFFF0F7F0),
                 borderRadius: BorderRadius.circular(12),
               ),
               alignment: Alignment.center,
@@ -1617,12 +1810,14 @@ class _ServiceCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Text(
-                        service.name,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                          color: kTextDark,
+                      Expanded(
+                        child: Text(
+                          service.name,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                            color: kTextDark,
+                          ),
                         ),
                       ),
                       if (isPreSelected && isSelected) ...[
@@ -1649,35 +1844,72 @@ class _ServiceCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     service.description,
-                    style:
-                        const TextStyle(fontSize: 12, color: kTextLight),
+                    style: const TextStyle(fontSize: 12, color: kTextLight),
                   ),
                 ],
               ),
             ),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                color: isSelected ?kYellow : Colors.transparent,
-                border: Border.all(
-                  color: isSelected ? kYellow : kBorderColor,
-                  width: 1.5,
-                ),
-                shape: BoxShape.circle,
-              ),
-              child: isSelected
-                  ? const Icon(Icons.check_rounded,
-                      color: Colors.white, size: 14)
-                  : null,
-            ),
+            const SizedBox(width: 8),
+            // ── Quantity "multiply" stepper (shown once selected) ──
+            isSelected
+                ? Container(
+                    decoration: BoxDecoration(
+                      color: kYellow,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        GestureDetector(
+                          onTap: onDecrement,
+                          child: const SizedBox(
+                            width: 28,
+                            height: 28,
+                            child: Icon(Icons.remove_rounded,
+                                size: 16, color: Colors.white),
+                          ),
+                        ),
+                        SizedBox(
+                          width: 20,
+                          child: Text(
+                            '$qty',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: onIncrement,
+                          child: const SizedBox(
+                            width: 28,
+                            height: 28,
+                            child: Icon(Icons.add_rounded,
+                                size: 16, color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: Colors.transparent,
+                      border: Border.all(color: kBorderColor, width: 1.5),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
           ],
         ),
       ),
     );
   }
 }
+
+// ─── Bottom Bar ───────────────────────────────────────────────────
 class _BottomBar extends StatelessWidget {
   final bool enabled;
   final int bookingCount;
@@ -1701,8 +1933,7 @@ class _BottomBar extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               color: kPrimaryLight,
               border: Border.all(color: kBorderColor),
@@ -1730,8 +1961,7 @@ class _BottomBar extends StatelessWidget {
                         bookingCount > 0
                             ? 'You can book or enquire again'
                             : 'Pick your services & preferred slot',
-                        style:
-                            const TextStyle(fontSize: 11, color:kYellow),
+                        style: const TextStyle(fontSize: 11, color: Color.fromARGB(255, 0, 0, 0)),
                       ),
                     ],
                   ),
@@ -1748,7 +1978,7 @@ class _BottomBar extends StatelessWidget {
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     side: BorderSide(
-                      color: enabled ?kYellow : const Color(0xFFCCCCCC),
+                      color: enabled ? kYellow : const Color(0xFFCCCCCC),
                       width: 1.5,
                     ),
                     shape: RoundedRectangleBorder(
@@ -1762,18 +1992,14 @@ class _BottomBar extends StatelessWidget {
                         style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
-                            color: enabled
-                                ? kYellow
-                                : const Color(0xFFAAAAAA)),
+                            color: enabled ? const Color.fromARGB(255, 0, 0, 0) : const Color(0xFFAAAAAA)),
                       ),
                       Text(
                         'FREE',
                         style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w800,
-                            color: enabled
-                                ? kYellow
-                                : const Color(0xFFAAAAAA)),
+                            color: enabled ? const Color.fromARGB(255, 0, 0, 0) : const Color(0xFFAAAAAA)),
                       ),
                     ],
                   ),
@@ -1785,7 +2011,7 @@ class _BottomBar extends StatelessWidget {
                 child: ElevatedButton(
                   onPressed: enabled ? onBookDemo : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor:kYellow,
+                    backgroundColor: kYellow,
                     disabledBackgroundColor: const Color(0xFFCCCCCC),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
@@ -1800,7 +2026,7 @@ class _BottomBar extends StatelessWidget {
                         style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
-                            color: Colors.black),
+                            color: Color.fromARGB(255, 0, 0, 0)),
                       ),
                       const SizedBox(width: 8),
                       Container(
@@ -1827,20 +2053,26 @@ class _BottomBar extends StatelessWidget {
     );
   }
 }
+
+// ─── Confirm Sheet ────────────────────────────────────────────────
 class _ConfirmSheet extends StatefulWidget {
   final List<YogaService> services;
+  final Map<String, int> serviceQty;
   final String serviceMode;
   final DateTime sessionDate;
   final String sessionTime;
   final String bookingType;
+  final int initialSessionCount;
   final void Function(Map<String, dynamic> data) onConfirm;
 
   const _ConfirmSheet({
     required this.services,
+    required this.serviceQty,
     required this.serviceMode,
     required this.sessionDate,
     required this.sessionTime,
     required this.bookingType,
+    required this.initialSessionCount,
     required this.onConfirm,
   });
 
@@ -1850,7 +2082,7 @@ class _ConfirmSheet extends StatefulWidget {
 
 class _ConfirmSheetState extends State<_ConfirmSheet> {
   int _sessionCount = 1;
-  final _sessionCountController = TextEditingController(text: '1');
+  late final TextEditingController _sessionCountController;
   final _nameController         = TextEditingController();
   final _phoneController        = TextEditingController();
   final _addressController      = TextEditingController();
@@ -1885,6 +2117,8 @@ class _ConfirmSheetState extends State<_ConfirmSheet> {
   @override
   void initState() {
     super.initState();
+    _sessionCount = widget.initialSessionCount < 1 ? 1 : widget.initialSessionCount;
+    _sessionCountController = TextEditingController(text: '$_sessionCount');
     _sessionCountController.addListener(() {
       final val = int.tryParse(_sessionCountController.text);
       if (val != null && val >= 1) setState(() => _sessionCount = val);
@@ -2012,21 +2246,15 @@ class _ConfirmSheetState extends State<_ConfirmSheet> {
 
   bool get _isQuestionnaireComplete {
     final email = _emailController.text.trim();
-    final isEmailValid = email.contains('@') && email.contains('.');
-    final isPincodeValid = _pincodeController.text.trim().length == 6;
+    final isEmailValid = email.isEmpty || (email.contains('@') && email.contains('.'));
+    final pincode = _pincodeController.text.trim();
+    final isPincodeValid = pincode.isEmpty || pincode.length == 6;
     final isAddressValid = widget.serviceMode == 'online' || _addressController.text.trim().isNotEmpty;
     
     return _nameController.text.trim().isNotEmpty &&
-        _phoneController.text.trim().length >= 10 &&
+        _phoneController.text.trim().length == 10 &&
         isEmailValid &&
-        _selectedGender != null &&
-        _stateController.text.trim().isNotEmpty &&
-        _districtController.text.trim().isNotEmpty &&
-        _areaController.text.trim().isNotEmpty &&
         isPincodeValid &&
-        _startPlanDate != null &&
-        _selectedDays.isNotEmpty &&
-        _selectedSource != null &&
         isAddressValid;
   }
 
@@ -2036,19 +2264,19 @@ class _ConfirmSheetState extends State<_ConfirmSheet> {
 
   String _getValidationMessage() {
     if (_nameController.text.trim().isEmpty) return 'Please enter your name';
-    if (_phoneController.text.trim().length < 10) return 'Please enter a valid phone number';
+    if (_phoneController.text.trim().length != 10) return 'Please enter a valid 10-digit phone number';
     
     final email = _emailController.text.trim();
-    if (email.isEmpty || !email.contains('@') || !email.contains('.')) return 'Please enter a valid email address';
-    if (_selectedGender == null) return 'Please select your gender';
-    if (_stateController.text.trim().isEmpty) return 'Please enter your state';
-    if (_districtController.text.trim().isEmpty) return 'Please enter your district';
-    if (_areaController.text.trim().isEmpty) return 'Please enter your area';
-    if (_pincodeController.text.trim().length != 6) return 'Please enter a 6-digit pincode';
-    if (_startPlanDate == null) return 'Please select when you want to start';
-    if (_selectedDays.isEmpty) return 'Please select at least one available day';
-    if (_selectedSource == null) return 'Please select how you heard about us';
-    if (widget.serviceMode != 'online' && _addressController.text.trim().isEmpty) return 'Please enter your home address';
+    if (email.isNotEmpty && (!email.contains('@') || !email.contains('.'))) {
+      return 'Please enter a valid email address';
+    }
+    final pincode = _pincodeController.text.trim();
+    if (pincode.isNotEmpty && pincode.length != 6) {
+      return 'Please enter a 6-digit pincode';
+    }
+    if (widget.serviceMode != 'online' && _addressController.text.trim().isEmpty) {
+      return 'Please enter your home address';
+    }
     return '';
   }
 
@@ -2299,22 +2527,27 @@ class _ConfirmSheetState extends State<_ConfirmSheet> {
                           color: Color(0xFFAAAAAA),
                           letterSpacing: 1.0)),
                   const SizedBox(height: 8),
-                  ...widget.services.map((s) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 3),
-                        child: Row(
-                          children: [
-                            Text(s.emoji,
-                                style: const TextStyle(fontSize: 14)),
-                            const SizedBox(width: 8),
-                            Text(s.name,
-                                style: const TextStyle(
-                                    fontSize: 13,
-                                    color: kTextDark,
-                                    fontWeight: FontWeight.w500,
-                                    height: 1.8)),
-                          ],
-                        ),
-                      )),
+                  ...widget.services.map((s) {
+                    final qty = widget.serviceQty[s.id] ?? 1;
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 3),
+                      child: Row(
+                        children: [
+                          Text(s.emoji,
+                              style: const TextStyle(fontSize: 14)),
+                          const SizedBox(width: 8),
+                          Text(
+                            qty > 1 ? '${s.name} (x$qty)' : s.name,
+                            style: const TextStyle(
+                                fontSize: 13,
+                                color: kTextDark,
+                                fontWeight: FontWeight.w500,
+                                height: 1.8),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
                 ],
               ),
             ),
@@ -2338,7 +2571,7 @@ class _ConfirmSheetState extends State<_ConfirmSheet> {
 
             _buildTextField(
               _emailController,
-              'Your email address',
+              'Your email address (Optional)',
               Icons.email_outlined,
               keyboardType: TextInputType.emailAddress,
               textCapitalization: TextCapitalization.none,
@@ -2367,7 +2600,7 @@ class _ConfirmSheetState extends State<_ConfirmSheet> {
                     letterSpacing: 1.0)),
             const SizedBox(height: 10),
             
-            const Text('Gender', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: kTextDark)),
+            const Text('Gender (Optional)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: kTextDark)),
             const SizedBox(height: 6),
             Row(
               children: ['Male', 'Female', 'Other'].map((g) {
@@ -2411,21 +2644,21 @@ class _ConfirmSheetState extends State<_ConfirmSheet> {
 
             Row(
               children: [
-                Expanded(child: _buildTextField(_stateController, 'State', Icons.map_outlined)),
+                Expanded(child: _buildTextField(_stateController, 'State (Optional)', Icons.map_outlined)),
                 const SizedBox(width: 10),
-                Expanded(child: _buildTextField(_districtController, 'District', Icons.location_city_outlined)),
+                Expanded(child: _buildTextField(_districtController, 'District (Optional)', Icons.location_city_outlined)),
               ],
             ),
             const SizedBox(height: 10),
 
             Row(
               children: [
-                Expanded(child: _buildTextField(_areaController, 'Area / Locality', Icons.near_me_outlined)),
+                Expanded(child: _buildTextField(_areaController, 'Area / Locality (Optional)', Icons.near_me_outlined)),
                 const SizedBox(width: 10),
                 Expanded(
                   child: _buildTextField(
                     _pincodeController,
-                    'Pincode',
+                    'Pincode (Optional)',
                     Icons.pin_drop_outlined,
                     keyboardType: TextInputType.number,
                     maxLength: 6,
@@ -2446,7 +2679,7 @@ class _ConfirmSheetState extends State<_ConfirmSheet> {
                     letterSpacing: 1.0)),
             const SizedBox(height: 10),
 
-            const Text('When do you want to start plan?', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: kTextDark)),
+            const Text('When do you want to start plan? (Optional)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: kTextDark)),
             const SizedBox(height: 6),
             GestureDetector(
               onTap: () async {
@@ -2485,7 +2718,7 @@ class _ConfirmSheetState extends State<_ConfirmSheet> {
                     const SizedBox(width: 10),
                     Text(
                       _startPlanDate == null
-                          ? 'Select Start Plan Date'
+                          ? 'Select Start Plan Date (Optional)'
                           : 'Starts: ${_startPlanDate!.day}/${_startPlanDate!.month}/${_startPlanDate!.year}',
                       style: TextStyle(
                         color: _startPlanDate == null ? const Color(0xFFBBBBBB) : kTextDark,
@@ -2502,7 +2735,7 @@ class _ConfirmSheetState extends State<_ConfirmSheet> {
 
             const SizedBox(height: 14),
 
-            const Text('Available Days for Practice', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: kTextDark)),
+            const Text('Available Days for Practice (Optional)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: kTextDark)),
             const SizedBox(height: 6),
             Wrap(
               spacing: 6,
@@ -2542,7 +2775,7 @@ class _ConfirmSheetState extends State<_ConfirmSheet> {
 
             const SizedBox(height: 14),
 
-            const Text('How did you hear about us?', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: kTextDark)),
+            const Text('How did you hear about us? (Optional)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: kTextDark)),
             const SizedBox(height: 6),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -2554,7 +2787,7 @@ class _ConfirmSheetState extends State<_ConfirmSheet> {
               child: DropdownButtonHideUnderline(
                 child: DropdownButtonFormField<String>(
                   value: _selectedSource,
-                  hint: const Text('Select Referral Source', style: TextStyle(color: Color(0xFFBBBBBB), fontSize: 13)),
+                  hint: const Text('Select Referral Source (Optional)', style: TextStyle(color: Color(0xFFBBBBBB), fontSize: 13)),
                   isExpanded: true,
                   decoration: const InputDecoration(
                     prefixIcon: Icon(Icons.search_rounded, color: kYellow, size: 20),
@@ -2578,7 +2811,7 @@ class _ConfirmSheetState extends State<_ConfirmSheet> {
             const SizedBox(height: 10),
             Row(
               children: [
-                const Text('What to share price range for coaches?',
+                const Text('Please provide the pricing range for coaching services.',
                     style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: kTextDark)),
                 const SizedBox(width: 4),
                 Icon(Icons.info_outline, size: 14, color: Colors.grey[400]),
@@ -2692,7 +2925,7 @@ class _ConfirmSheetState extends State<_ConfirmSheet> {
 
             const SizedBox(height: 16),
             if (!isEnquiry) ...[
-              const Text('VOUCHER / PROMO CODE',
+              const Text('VOUCHER / PROMO CODE (OPTIONAL)',
                   style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
@@ -2704,7 +2937,7 @@ class _ConfirmSheetState extends State<_ConfirmSheet> {
                   Expanded(
                     child: _buildTextField(
                       _voucherController,
-                      'Enter voucher code',
+                      'Enter voucher code (Optional)',
                       Icons.card_giftcard_rounded,
                       textCapitalization: TextCapitalization.characters,
                       enabled: !_applyingVoucher,

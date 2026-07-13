@@ -161,6 +161,20 @@ class ApiService {
     }
   }
 
+  // Fetch all products from the database
+  static Future<List<dynamic>> getProducts() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/products'));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        return [];
+      }
+    } catch (e) {
+      return [];
+    }
+  }
+
   // --- EVENTS ---
 
   // Fetch upcoming events from the database

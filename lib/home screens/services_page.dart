@@ -10,6 +10,12 @@ import 'package:mrcoach/profile_settings_pages/profile_screen.dart'
     hide kPrimary, kPrimaryDeep;
 import 'package:mrcoach/webview_screen.dart';
 import 'package:mrcoach/services/api_service.dart';
+import 'package:mrcoach/home%20screens/fitness_screen.dart' hide kYellow, kDark;
+import 'package:mrcoach/home%20screens/med_screen.dart' hide kYellow, kDark, kGreen;
+import 'package:mrcoach/online_screen.dart';
+import 'package:mrcoach/physio_select_screen.dart';
+import 'package:mrcoach/home%20screens/sports_screen.dart' hide kDark, kYellow, kGreen;
+import 'package:mrcoach/home%20screens/yoga_screen.dart';
 
 Future<void> _launchEventsUrl() async {
   final Uri url = Uri.parse('https://www.mrcoach.in/events');
@@ -1782,14 +1788,29 @@ class _ServiceDetailSheet extends StatelessWidget {
                     child: GestureDetector(
                       onTap: () {
                         Navigator.pop(context);
+                        Widget dest;
+                        final catLower = categoryName.toLowerCase().trim();
+                        if (catLower == 'fitness') {
+                          dest = FitnessScreen(preSelectedServiceName: item.title);
+                        } else if (catLower == 'physiotherapy' || catLower == 'physio') {
+                          dest = PhysioScreen(preSelectedServiceName: item.title);
+                        } else if (catLower == 'sports') {
+                          dest = SportsScreen(preSelectedServiceName: item.title);
+                        } else if (catLower == 'yoga') {
+                          dest = YogaBooking1Screen(preSelectedServiceName: item.title);
+                        } else if (catLower == 'therapy') {
+                          dest = TherapyScreen(preSelectedServiceName: item.title);
+                        } else if (catLower == 'nutrition' || catLower == 'diet') {
+                          dest = DietBooking1Screen(preSelectedServiceName: item.title);
+                        } else {
+                          dest = YogaServiceScreen(
+                            preSelectedServiceName: item.title,
+                            categoryName: categoryName,
+                          );
+                        }
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (_) => YogaServiceScreen(
-                              preSelectedServiceName: item.title,
-                              categoryName: categoryName,
-                            ),
-                          ),
+                          MaterialPageRoute(builder: (_) => dest),
                         );
                       },
                       child: Container(

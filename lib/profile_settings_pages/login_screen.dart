@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -920,50 +921,163 @@ class _OtpScreenState extends State<OtpScreen> {
               // ── TOP: yellow ──────────────────────────────────────────────
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
                 decoration: const BoxDecoration(
-                  color: kTopBg,
                   borderRadius: BorderRadius.only(
                       bottomLeft:  Radius.circular(36),
                       bottomRight: Radius.circular(36)),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                            color: kText.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(10)),
-                        child: const Icon(Icons.arrow_back_ios_new, color: kText, size: 18),
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                      bottomLeft:  Radius.circular(36),
+                      bottomRight: Radius.circular(36)),
+                  child: Stack(
+                    children: [
+                      // 1. Base gradient
+                      Positioned.fill(
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Color(0xFFFFFBE6), // very soft yellow
+                                Color(0xFFFFF099), // warm yellow
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(color: kText.withOpacity(0.1), shape: BoxShape.circle),
-                      child: const Icon(Icons.lock_outline, color: kText, size: 30),
-                    ),
-                    const SizedBox(height: 16),
-                    Text('Hi, ${widget.name}! 👋',
-                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: kText)),
-                    const SizedBox(height: 4),
-                    const Text('Enter OTP',
-                        style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: kText, letterSpacing: -0.5)),
-                    const SizedBox(height: 6),
-                    RichText(
-                      text: TextSpan(
-                        style: const TextStyle(fontSize: 13.5, color: Color(0xFF5A4000), height: 1.5),
-                        children: [
-                          const TextSpan(text: 'We sent a 6-digit code to\n'),
-                          TextSpan(text: '+91 ${widget.phone}',
-                              style: const TextStyle(fontWeight: FontWeight.w800, color: kText)),
-                        ],
+                      // 2. Colored gradient blobs
+                      Positioned(
+                        top: -50,
+                        right: -50,
+                        child: Container(
+                          width: 180,
+                          height: 180,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: const Color(0xFFFF9F43).withOpacity(0.25), // soft peach/orange
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                      Positioned(
+                        bottom: -40,
+                        left: -40,
+                        child: Container(
+                          width: 150,
+                          height: 150,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: const Color(0xFFFFD800).withOpacity(0.35), // gold
+                          ),
+                        ),
+                      ),
+                      // 3. Blur effect overlay
+                      Positioned.fill(
+                        child: ImageFiltered(
+                          imageFilter: ImageFilter.blur(sigmaX: 45, sigmaY: 45),
+                          child: Container(color: Colors.transparent),
+                        ),
+                      ),
+                      // 4. Subtle pattern overlay (microtexture)
+                      Positioned.fill(
+                        child: CustomPaint(
+                          painter: _FitnessPatternPainter(
+                            color: Colors.black.withOpacity(0.015),
+                            iconSize: 11,
+                            spacingX: 38,
+                            spacingY: 34,
+                          ),
+                        ),
+                      ),
+                      // 5. Content Layout
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            GestureDetector(
+                              onTap: () => Navigator.pop(context),
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                    color: kText.withOpacity(0.08),
+                                    borderRadius: BorderRadius.circular(10)),
+                                child: const Icon(Icons.arrow_back_ios_new, color: kText, size: 18),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            // Glassmorphic Card Container for text/icon content
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.35),
+                                borderRadius: BorderRadius.circular(24),
+                                border: Border.all(
+                                  color: Colors.white.withOpacity(0.45),
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: kText.withOpacity(0.06),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.lock_outline, color: kText, size: 28),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'Hi, ${widget.name}! 👋',
+                                    style: const TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w800,
+                                      color: kText,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  const Text(
+                                    'Enter OTP',
+                                    style: TextStyle(
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.w900,
+                                      color: kText,
+                                      letterSpacing: -0.5,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  RichText(
+                                    text: TextSpan(
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: Color(0xFF4A4A5A),
+                                        height: 1.5,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      children: [
+                                        const TextSpan(text: 'We sent a 6-digit code to '),
+                                        TextSpan(
+                                          text: '+91 ${widget.phone}',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w800,
+                                            color: kText,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
