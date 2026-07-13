@@ -32,6 +32,23 @@
     <string>We need your location to automatically show nearby coaches and events.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>We need your location to automatically show nearby coaches and events.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>We need access to your camera to let you take photos for your profile or booking requests.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>We need access to your photo library to let you upload photos for your profile or booking requests.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>We need access to your microphone for recording video queries.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.91035596332-akkmai05bpof4jjaau3tg126seba4ip4</string>
+			</array>
+		</dict>
+	</array>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

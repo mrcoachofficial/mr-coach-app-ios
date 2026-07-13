@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:mrcoach/services/api_service.dart';
 import 'package:flutter/gestures.dart';
 import 'package:mrcoach/profile_settings_pages/legal_screens.dart';
@@ -172,6 +174,51 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       setState(() => _isLoading = false);
       _snack('Google sign-in error: $e', Colors.redAccent);
+    }
+  }
+
+  void _onAppleSignIn() async {
+    setState(() => _isLoading = true);
+    try {
+      final credential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+      );
+
+      final String? identityToken = credential.identityToken;
+      final String? userIdentifier = credential.userIdentifier;
+      final String? email = credential.email;
+      final String? name = credential.givenName != null
+          ? '${credential.givenName} ${credential.familyName ?? ""}'.trim()
+          : null;
+
+      if (identityToken == null || userIdentifier == null) {
+        _snack('Apple authentication failed: Missing tokens', Colors.redAccent);
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      final result = await ApiService.loginWithApple(
+        identityToken: identityToken,
+        userIdentifier: userIdentifier,
+        email: email,
+        name: name,
+      );
+      setState(() => _isLoading = false);
+
+      if (result['success'] == true) {
+        _snack('Logged in with Apple! 🎉', Colors.green);
+        if (mounted) {
+          Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+        }
+      } else {
+        _snack(result['message'] ?? 'Failed Apple sign in', Colors.redAccent);
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      _snack('Apple sign-in error: $e', Colors.redAccent);
     }
   }
 
@@ -459,6 +506,26 @@ class _LoginScreenState extends State<LoginScreen> {
                   ]),
                 ),
               ),
+              if (Platform.isIOS) ...[
+                const SizedBox(height: 12),
+                GestureDetector(
+                  onTap: _onAppleSignIn,
+                  child: Container(
+                    width: double.infinity, height: 54,
+                    decoration: BoxDecoration(
+                      color: Colors.black,
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
+                    ),
+                    child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      Icon(Icons.apple, color: Colors.white, size: 24),
+                      SizedBox(width: 12),
+                      Text('Continue with Apple',
+                          style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
+                    ]),
+                  ),
+                ),
+              ],
               const SizedBox(height: 40),
 
               Center(

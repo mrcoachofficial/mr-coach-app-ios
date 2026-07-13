@@ -886,6 +886,43 @@ class ApiService {
     }
   }
 
+  // Login/Register with Apple
+  static Future<Map<String, dynamic>> loginWithApple({
+    required String identityToken,
+    required String userIdentifier,
+    String? email,
+    String? name,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/apple'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'identityToken': identityToken,
+          'userIdentifier': userIdentifier,
+          if (email != null) 'email': email,
+          if (name != null) 'name': name,
+        }),
+      );
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        if (data['token'] != null) {
+          await saveToken(data['token']);
+          await updateCachedProfile(data['name'] ?? 'Enter your name', data['email'] ?? '...@gmail.com');
+        }
+        return {
+          'success': true,
+          'user': data,
+          'message': 'Logged in with Apple successfully'
+        };
+      } else {
+        return {'success': false, 'message': data['message'] ?? 'Failed Apple login'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Error: $e'};
+    }
+  }
+
   // Complete Profile Setup after OTP verification
   static Future<Map<String, dynamic>> completeProfileSetup({
     required String name,
