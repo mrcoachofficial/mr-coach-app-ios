@@ -21,13 +21,13 @@ workflows:
     scripts:
       - name: Set up keychain
         script: |
-          export APP_STORE_CONNECT_PRIVATE_KEY=$(python3 -c "import base64, os; val = os.environ.get('APP_STORE_CONNECT_PRIVATE_KEY', '').strip(); print(base64.b64decode(val).decode('utf-8') if not val.startswith('---') else val)")
-          export CERTIFICATE_PRIVATE_KEY=$(python3 -c "import base64, os; val = os.environ.get('CERTIFICATE_PRIVATE_KEY', '').strip(); print(base64.b64decode(val).decode('utf-8') if not val.startswith('---') else val)")
+          export APP_STORE_CONNECT_PRIVATE_KEY=$(python3 -c "import base64, os; val = ''.join(os.environ.get('APP_STORE_CONNECT_PRIVATE_KEY', '').split()); print(base64.b64decode(val).decode('utf-8') if not val.startswith('---') else os.environ.get('APP_STORE_CONNECT_PRIVATE_KEY'))")
+          export CERTIFICATE_PRIVATE_KEY=$(python3 -c "import base64, os; val = ''.join(os.environ.get('CERTIFICATE_PRIVATE_KEY', '').split()); print(base64.b64decode(val).decode('utf-8') if not val.startswith('---') else os.environ.get('CERTIFICATE_PRIVATE_KEY'))")
           keychain initialize
       - name: Fetch signing files
         script: |
-          export APP_STORE_CONNECT_PRIVATE_KEY=$(python3 -c "import base64, os; val = os.environ.get('APP_STORE_CONNECT_PRIVATE_KEY', '').strip(); print(base64.b64decode(val).decode('utf-8') if not val.startswith('---') else val)")
-          export CERTIFICATE_PRIVATE_KEY=$(python3 -c "import base64, os; val = os.environ.get('CERTIFICATE_PRIVATE_KEY', '').strip(); print(base64.b64decode(val).decode('utf-8') if not val.startswith('---') else val)")
+          export APP_STORE_CONNECT_PRIVATE_KEY=$(python3 -c "import base64, os; val = ''.join(os.environ.get('APP_STORE_CONNECT_PRIVATE_KEY', '').split()); print(base64.b64decode(val).decode('utf-8') if not val.startswith('---') else os.environ.get('APP_STORE_CONNECT_PRIVATE_KEY'))")
+          export CERTIFICATE_PRIVATE_KEY=$(python3 -c "import base64, os; val = ''.join(os.environ.get('CERTIFICATE_PRIVATE_KEY', '').split()); print(base64.b64decode(val).decode('utf-8') if not val.startswith('---') else os.environ.get('CERTIFICATE_PRIVATE_KEY'))")
           app-store-connect fetch-signing-files "com.mrcoachclient.app" --type IOS_APP_STORE --create
       - name: Set up code signing settings on Xcode project
         script: |
@@ -43,7 +43,7 @@ workflows:
           flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist
       - name: Publish to App Store Connect
         script: |
-          export APP_STORE_CONNECT_PRIVATE_KEY=$(python3 -c "import base64, os; val = os.environ.get('APP_STORE_CONNECT_PRIVATE_KEY', '').strip(); print(base64.b64decode(val).decode('utf-8') if not val.startswith('---') else val)")
+          export APP_STORE_CONNECT_PRIVATE_KEY=$(python3 -c "import base64, os; val = ''.join(os.environ.get('APP_STORE_CONNECT_PRIVATE_KEY', '').split()); print(base64.b64decode(val).decode('utf-8') if not val.startswith('---') else os.environ.get('APP_STORE_CONNECT_PRIVATE_KEY'))")
           app-store-connect publish
     artifacts:
       - build/ios/ipa/*.ipa
