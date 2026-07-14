@@ -32,12 +32,16 @@ workflows:
                       print(f'Warning: {env_name} is empty!')
                       continue
                   decoded = base64.b64decode(val).decode('utf-8') if not val.startswith('---') else raw_val
-                  print(f'{env_name} successfully parsed. Decoded length: {len(decoded)}')
+                  
+                  # Sanitize to standard Unix PEM format
+                  lines = [line.strip() for line in decoded.replace('\r', '').split('\n') if line.strip()]
+                  sanitized = '\n'.join(lines) + '\n'
+                  print(f'{env_name} successfully parsed. Decoded length: {len(sanitized)}')
                   
                   # Write to temporary file
                   file_path = f'/Users/builder/{env_name.lower()}.pem'
                   with open(file_path, 'w') as f:
-                      f.write(decoded)
+                      f.write(sanitized)
                   print(f'Successfully wrote key to {file_path}')
           except Exception as e:
               print(f'Error decoding key: {e}', file=sys.stderr)
