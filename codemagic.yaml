@@ -19,19 +19,37 @@ workflows:
       branch_patterns:
         - pattern: master
     scripts:
-      - name: Debug Environment Variables
+      - name: Debug and Write Private Keys
         script: |
-          echo "=== Loaded Environment Variable Names ==="
-          printenv | cut -d'=' -f1 | grep -E "APP_STORE|CERTIFICATE|KEY" || echo "No matching variables found"
+          python3 -c "
+          import base64, os, sys
+          try:
+              for env_name in ['APP_STORE_CONNECT_PRIVATE_KEY', 'CERTIFICATE_PRIVATE_KEY']:
+                  raw_val = os.environ.get(env_name, '')
+                  print(f'Processing {env_name}... Raw length: {len(raw_val)}')
+                  val = ''.join(raw_val.split())
+                  if not val:
+                      print(f'Warning: {env_name} is empty!')
+                      continue
+                  decoded = base64.b64decode(val).decode('utf-8') if not val.startswith('---') else raw_val
+                  print(f'{env_name} successfully parsed. Decoded length: {len(decoded)}')
+                  
+                  # Write to temporary file
+                  file_path = f'/Users/builder/{env_name.lower()}.pem'
+                  with open(file_path, 'w') as f:
+                      f.write(decoded)
+                  print(f'Successfully wrote key to {file_path}')
+          except Exception as e:
+              print(f'Error decoding key: {e}', file=sys.stderr)
+              sys.exit(1)
+          "
       - name: Set up keychain
         script: |
-          export APP_STORE_CONNECT_PRIVATE_KEY=$(python3 -c "import base64, os; val = ''.join(os.environ.get('APP_STORE_CONNECT_PRIVATE_KEY', '').split()); print(base64.b64decode(val).decode('utf-8') if not val.startswith('---') else os.environ.get('APP_STORE_CONNECT_PRIVATE_KEY'))")
-          export CERTIFICATE_PRIVATE_KEY=$(python3 -c "import base64, os; val = ''.join(os.environ.get('CERTIFICATE_PRIVATE_KEY', '').split()); print(base64.b64decode(val).decode('utf-8') if not val.startswith('---') else os.environ.get('CERTIFICATE_PRIVATE_KEY'))")
           keychain initialize
       - name: Fetch signing files
         script: |
-          export APP_STORE_CONNECT_PRIVATE_KEY=$(python3 -c "import base64, os; val = ''.join(os.environ.get('APP_STORE_CONNECT_PRIVATE_KEY', '').split()); print(base64.b64decode(val).decode('utf-8') if not val.startswith('---') else os.environ.get('APP_STORE_CONNECT_PRIVATE_KEY'))")
-          export CERTIFICATE_PRIVATE_KEY=$(python3 -c "import base64, os; val = ''.join(os.environ.get('CERTIFICATE_PRIVATE_KEY', '').split()); print(base64.b64decode(val).decode('utf-8') if not val.startswith('---') else os.environ.get('CERTIFICATE_PRIVATE_KEY'))")
+          export APP_STORE_CONNECT_PRIVATE_KEY=$(cat /Users/builder/app_store_connect_private_key.pem)
+          export CERTIFICATE_PRIVATE_KEY=$(cat /Users/builder/certificate_private_key.pem)
           app-store-connect fetch-signing-files "com.mrcoachclient.app" --type IOS_APP_STORE --create
       - name: Set up code signing settings on Xcode project
         script: |
@@ -47,7 +65,7 @@ workflows:
           flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist
       - name: Publish to App Store Connect
         script: |
-          export APP_STORE_CONNECT_PRIVATE_KEY=$(python3 -c "import base64, os; val = ''.join(os.environ.get('APP_STORE_CONNECT_PRIVATE_KEY', '').split()); print(base64.b64decode(val).decode('utf-8') if not val.startswith('---') else os.environ.get('APP_STORE_CONNECT_PRIVATE_KEY'))")
+          export APP_STORE_CONNECT_PRIVATE_KEY=$(cat /Users/builder/app_store_connect_private_key.pem)
           app-store-connect publish
     artifacts:
       - build/ios/ipa/*.ipa
