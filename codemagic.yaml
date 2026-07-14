@@ -9,17 +9,15 @@ workflows:
       xcode: latest
       cocoapods: default
       groups:
-        - app_store_credentials # Define this group in Codemagic UI for certificates/keys
+        - app_store_credentials
       vars:
         XCODE_PROJECT: "ios/Runner.xcodeproj"
         XCODE_SCHEME: "Runner"
-        APP_ID: 6470000000 # Update this with your App Store Apple ID once registered
     triggering:
       events:
         - push
       branch_patterns:
-        - pattern: main
-          target_type: primary
+        - pattern: master
     scripts:
       - name: Set up code signing settings on Xcode project
         script: |
@@ -33,11 +31,8 @@ workflows:
       - name: Build Flutter iOS IPA
         script: |
           flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist
+      - name: Publish to App Store Connect
+        script: |
+          app-store-connect publish
     artifacts:
       - build/ios/ipa/*.ipa
-    publishing:
-      app_store_connect:
-        auth: integration
-        submit_to_testflight: true
-        beta_groups:
-          - External Testers
