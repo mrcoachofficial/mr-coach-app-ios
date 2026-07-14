@@ -21,9 +21,8 @@ workflows:
     scripts:
       - name: Debug Environment Variables
         script: |
-          echo "=== Debugging APP_STORE_CONNECT_PRIVATE_KEY ==="
-          echo "Raw length: ${#APP_STORE_CONNECT_PRIVATE_KEY}"
-          python3 -c "import os; val = os.environ.get('APP_STORE_CONNECT_PRIVATE_KEY', ''); print('Starts with ---:', val.strip().startswith('---')); print('Contains spaces:', ' ' in val); print('Contains newlines:', '\n' in val); print('First 15 chars:', repr(val[:15]))"
+          echo "=== Loaded Environment Variable Names ==="
+          printenv | cut -d'=' -f1 | grep -E "APP_STORE|CERTIFICATE|KEY" || echo "No matching variables found"
       - name: Set up keychain
         script: |
           export APP_STORE_CONNECT_PRIVATE_KEY=$(python3 -c "import base64, os; val = ''.join(os.environ.get('APP_STORE_CONNECT_PRIVATE_KEY', '').split()); print(base64.b64decode(val).decode('utf-8') if not val.startswith('---') else os.environ.get('APP_STORE_CONNECT_PRIVATE_KEY'))")
