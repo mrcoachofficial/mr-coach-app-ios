@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io' show Platform;
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -506,7 +507,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ]),
                 ),
               ),
-              if (Platform.isIOS) ...[
+              if (!kIsWeb && Platform.isIOS) ...[
                 const SizedBox(height: 12),
                 GestureDetector(
                   onTap: _onAppleSignIn,
