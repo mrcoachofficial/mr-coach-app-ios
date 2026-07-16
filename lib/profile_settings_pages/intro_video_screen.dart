@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_player/video_player.dart';
@@ -26,6 +27,9 @@ class _IntroVideoScreenState extends State<IntroVideoScreen> {
     _controller = VideoPlayerController.asset('assets/images/intro video.mp4');
     try {
       await _controller.initialize();
+      if (kIsWeb) {
+        await _controller.setVolume(0.0); // Mute on web so Chrome allows autoplay
+      }
       _controller.play();
       _controller.addListener(_videoListener);
       setState(() {
