@@ -10,6 +10,8 @@ import 'package:mrcoach/services/api_service.dart';
 import 'package:mrcoach/theme_notifier.dart';
 import 'package:mrcoach/utils/localization.dart';
 import 'package:mrcoach/my_bookings_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mrcoach/profile_settings_pages/intro_video_screen.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -31,6 +33,7 @@ void initOneSignalNotifications() {
 }
 
 bool isLoggedIn = false;
+bool hasSeenIntro = false;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,6 +41,11 @@ void main() async {
   await ApiService.loadCachedHomeResources();
   final token = await ApiService.getToken();
   isLoggedIn = token != null;
+  
+  // Check if they have seen the intro video
+  final prefs = await SharedPreferences.getInstance();
+  hasSeenIntro = prefs.getBool('seen_intro') ?? false;
+  
   runApp(const MyApp());
 }
 
@@ -81,7 +89,9 @@ class _MyAppState extends State<MyApp> {
         ),
       ),
 
-      home: isLoggedIn ? const Home2Screen() : const LoginScreen(),
+      home: !hasSeenIntro
+          ? IntroVideoScreen(isLoggedIn: isLoggedIn)
+          : (isLoggedIn ? const Home2Screen() : const LoginScreen()),
 
       routes: {
         '/home': (context) => const Home2Screen(),
